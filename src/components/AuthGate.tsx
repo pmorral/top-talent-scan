@@ -32,11 +32,18 @@ export const AuthGate = () => {
       : await signIn(email, password);
 
     if (error) {
+      let errorMessage = error.message;
+      
+      // Si es un intento de login y el usuario no existe con email @lapieza.io
+      if (!isSignUp && error.message === 'Invalid login credentials' && email.endsWith('@lapieza.io')) {
+        errorMessage = 'No tienes una cuenta registrada. Haz clic en "¿Necesitas una cuenta? Regístrate" para crear tu cuenta.';
+      } else if (error.message === 'Invalid login credentials') {
+        errorMessage = 'Credenciales no válidas. Contacta al administrador del sistema.';
+      }
+      
       toast({
         title: "Error de autenticación",
-        description: error.message === 'Invalid login credentials' 
-          ? 'Credenciales inválidas. Verifica tu email y contraseña.'
-          : error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } else if (isSignUp) {
