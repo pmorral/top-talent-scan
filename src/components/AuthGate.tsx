@@ -21,7 +21,7 @@ export const AuthGate = () => {
     if (!email.endsWith('@lapieza.io')) {
       toast({
         title: "Acceso denegado",
-        description: "Solo usuarios con email @lapieza.io pueden acceder a esta herramienta.",
+        description: "Credenciales no válidas. Contacta al administrador del sistema.",
         variant: "destructive",
       });
       return;
