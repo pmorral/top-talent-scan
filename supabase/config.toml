@@ -2,3 +2,6 @@ project_id = "bujahanmrijvydnqlpbm"
 
 [functions.analyze-cv]
 verify_jwt = false
+
+[functions.extract-pdf-text]
+verify_jwt = false
