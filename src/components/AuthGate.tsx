@@ -3,19 +3,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Shield, Building } from 'lucide-react';
+import { Shield, Building, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from './AuthProvider';
 
-interface AuthGateProps {
-  onAuthenticated: () => void;
-}
-
-export const AuthGate = ({ onAuthenticated }: AuthGateProps) => {
+export const AuthGate = () => {
   const [email, setEmail] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [password, setPassword] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const { signIn, signUp, loading } = useAuth();
   const { toast } = useToast();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email.endsWith('@lapieza.io')) {
@@ -27,17 +27,29 @@ export const AuthGate = ({ onAuthenticated }: AuthGateProps) => {
       return;
     }
 
-    setIsLoading(true);
-    
-    // Simulate authentication - in real implementation, this would use Supabase auth
-    setTimeout(() => {
-      setIsLoading(false);
-      onAuthenticated();
+    const { error } = isSignUp 
+      ? await signUp(email, password)
+      : await signIn(email, password);
+
+    if (error) {
+      toast({
+        title: "Error de autenticación",
+        description: error.message === 'Invalid login credentials' 
+          ? 'Credenciales inválidas. Verifica tu email y contraseña.'
+          : error.message,
+        variant: "destructive",
+      });
+    } else if (isSignUp) {
+      toast({
+        title: "Registro exitoso",
+        description: "Revisa tu email para confirmar tu cuenta.",
+      });
+    } else {
       toast({
         title: "Acceso autorizado",
         description: `Bienvenido ${email}`,
       });
-    }, 1500);
+    }
   };
 
   return (
@@ -64,7 +76,7 @@ export const AuthGate = ({ onAuthenticated }: AuthGateProps) => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email corporativo</Label>
                 <Input
@@ -76,12 +88,46 @@ export const AuthGate = ({ onAuthenticated }: AuthGateProps) => {
                   required
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Contraseña</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Tu contraseña"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
               <Button 
                 type="submit" 
                 className="w-full" 
-                disabled={isLoading}
+                disabled={loading}
               >
-                {isLoading ? 'Verificando...' : 'Acceder'}
+                {loading ? 'Procesando...' : (isSignUp ? 'Crear cuenta' : 'Iniciar sesión')}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                onClick={() => setIsSignUp(!isSignUp)}
+              >
+                {isSignUp ? '¿Ya tienes cuenta? Inicia sesión' : '¿Necesitas una cuenta? Regístrate'}
               </Button>
             </form>
           </CardContent>

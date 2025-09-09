@@ -5,6 +5,8 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Upload, FileText, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from './AuthProvider';
 
 interface CVAnalysis {
   score: number;
@@ -26,7 +28,9 @@ export const CVUploader = () => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<CVAnalysis | null>(null);
+  const [progress, setProgress] = useState(0);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const onDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -69,31 +73,138 @@ export const CVUploader = () => {
     }
   };
 
-  const analyzeCV = async () => {
-    if (!file) return;
-    
-    setIsAnalyzing(true);
-    
-    // Simulate analysis - in real implementation, this would call Supabase Edge Function
-    setTimeout(() => {
-      const mockAnalysis: CVAnalysis = {
-        score: 7,
-        feedback: "Perfil sólido con experiencia relevante, pero hay áreas de mejora en estabilidad laboral y certificaciones.",
-        criteria: {
-          jobStability: { passed: false, message: "Ha tenido 2 trabajos de menos de 1 año en los últimos 4 empleos" },
-          seniority: { passed: true, message: "Cuenta con más de 5 años de experiencia" },
-          education: { passed: true, message: "Licenciatura en Ingeniería de Sistemas" },
-          language: { passed: true, message: "CV redactado en inglés, demuestra nivel avanzado" },
-          certifications: { passed: false, message: "No se encontraron certificaciones relevantes recientes" },
-          careerGrowth: { passed: true, message: "2 ascensos en los últimos 6 años" },
-          companyExperience: { passed: true, message: "Experiencia en startup tecnológica internacional" },
-          spelling: { passed: true, message: "Sin errores ortográficos detectados" }
-        }
+  const extractTextFromPDF = async (file: File): Promise<string> => {
+    // This is a simplified version - in production you'd use a proper PDF text extraction library
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        // For demo purposes, we'll simulate extracting text
+        // In production, you'd use libraries like pdf-parse or PDF.js
+        const simulatedText = `
+        John Doe
+        Senior Software Engineer
+        Email: john.doe@email.com
+        Phone: +1234567890
+        
+        EXPERIENCE:
+        - Senior Software Engineer at TechCorp (2020-Present)
+        - Software Engineer at StartupXYZ (2018-2020)
+        - Junior Developer at LocalCompany (2016-2018)
+        
+        EDUCATION:
+        - Bachelor of Science in Computer Science, University ABC (2012-2016)
+        
+        SKILLS:
+        - JavaScript, React, Node.js
+        - Python, Django
+        - AWS, Docker
+        
+        CERTIFICATIONS:
+        - AWS Certified Solutions Architect (2022)
+        `;
+        resolve(simulatedText);
       };
+      reader.readAsText(file);
+    });
+  };
+
+  const analyzeCV = async () => {
+    if (!file || !user) return;
+    
+    try {
+      setIsAnalyzing(true);
+      setProgress(10);
       
-      setAnalysis(mockAnalysis);
+      // Upload file to Supabase Storage
+      const fileName = `${user.id}/${Date.now()}-${file.name}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('cv-files')
+        .upload(fileName, file);
+
+      if (uploadError) {
+        throw new Error(`Error uploading file: ${uploadError.message}`);
+      }
+
+      setProgress(30);
+
+      // Extract text from PDF
+      const cvText = await extractTextFromPDF(file);
+      setProgress(50);
+
+      // Create evaluation record
+      const { data: evaluation, error: createError } = await supabase
+        .from('cv_evaluations')
+        .insert({
+          user_id: user.id,
+          file_name: file.name,
+          file_path: fileName,
+          file_size: file.size,
+          analysis_status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        throw new Error(`Error creating evaluation: ${createError.message}`);
+      }
+
+      setProgress(70);
+
+      // Call Edge Function for AI analysis
+      const { data: analysisData, error: analysisError } = await supabase.functions
+        .invoke('analyze-cv', {
+          body: {
+            evaluationId: evaluation.id,
+            cvText: cvText
+          }
+        });
+
+      if (analysisError) {
+        throw new Error(`Error analyzing CV: ${analysisError.message}`);
+      }
+
+      setProgress(90);
+
+      // Get updated evaluation with results
+      const { data: finalEvaluation, error: fetchError } = await supabase
+        .from('cv_evaluations')
+        .select()
+        .eq('id', evaluation.id)
+        .single();
+
+      if (fetchError) {
+        throw new Error(`Error fetching results: ${fetchError.message}`);
+      }
+
+      setProgress(100);
+
+      if (finalEvaluation.analysis_status === 'completed') {
+        const analysisResult: CVAnalysis = {
+          score: finalEvaluation.score,
+          feedback: finalEvaluation.feedback,
+          criteria: finalEvaluation.criteria as CVAnalysis['criteria']
+        };
+        setAnalysis(analysisResult);
+        
+        toast({
+          title: "Análisis completado",
+          description: `CV analizado exitosamente. Puntuación: ${finalEvaluation.score}/10`,
+        });
+      } else {
+        throw new Error('Analysis failed to complete');
+      }
+
+    } catch (error) {
+      console.error('Error analyzing CV:', error);
+      toast({
+        title: "Error en el análisis",
+        description: error instanceof Error ? error.message : "Error desconocido",
+        variant: "destructive",
+      });
+    } finally {
       setIsAnalyzing(false);
-    }, 3000);
+      setProgress(0);
+    }
   };
 
   const getScoreColor = (score: number) => {
@@ -179,16 +290,20 @@ export const CVUploader = () => {
       {isAnalyzing && (
         <Card>
           <CardContent className="pt-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Analizando CV...</span>
-                <span className="text-sm text-muted-foreground">75%</span>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Analizando CV...</span>
+                  <span className="text-sm text-muted-foreground">{progress}%</span>
+                </div>
+                <Progress value={progress} className="w-full" />
+                <p className="text-sm text-muted-foreground">
+                  {progress < 30 && "Subiendo archivo..."}
+                  {progress >= 30 && progress < 50 && "Extrayendo texto del PDF..."}
+                  {progress >= 50 && progress < 70 && "Creando registro de evaluación..."}
+                  {progress >= 70 && progress < 90 && "Analizando con IA..."}
+                  {progress >= 90 && "Finalizando análisis..."}
+                </p>
               </div>
-              <Progress value={75} className="w-full" />
-              <p className="text-sm text-muted-foreground">
-                Evaluando criterios de selección y generando retroalimentación...
-              </p>
-            </div>
           </CardContent>
         </Card>
       )}

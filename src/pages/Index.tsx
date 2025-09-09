@@ -1,12 +1,14 @@
-import { useState } from 'react';
 import { AuthGate } from '@/components/AuthGate';
 import { CVUploader } from '@/components/CVUploader';
+import { useAuth } from '@/components/AuthProvider';
+import { Button } from '@/components/ui/button';
+import { LogOut, User } from 'lucide-react';
 
 const Index = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { user, signOut } = useAuth();
 
-  if (!isAuthenticated) {
-    return <AuthGate onAuthenticated={() => setIsAuthenticated(true)} />;
+  if (!user) {
+    return <AuthGate />;
   }
 
   return (
@@ -24,8 +26,20 @@ const Index = () => {
                 <p className="text-sm text-muted-foreground">La Pieza - Herramienta Interna</p>
               </div>
             </div>
-            <div className="text-sm text-muted-foreground">
-              Evaluación automática de perfiles
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <User className="h-4 w-4" />
+                {user.email}
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={signOut}
+                className="flex items-center gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                Salir
+              </Button>
             </div>
           </div>
         </div>
