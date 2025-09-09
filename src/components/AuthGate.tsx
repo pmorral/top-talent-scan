@@ -7,6 +7,7 @@ import { Shield, Building, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from './AuthProvider';
 import { EmailConfirmation } from '../pages/EmailConfirmation';
+import { supabase } from '@/integrations/supabase/client';
 
 export const AuthGate = () => {
   const [email, setEmail] = useState('');
@@ -56,6 +57,42 @@ export const AuthGate = () => {
       toast({
         title: "Acceso autorizado",
         description: `Bienvenido ${email}`,
+      });
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email || !email.endsWith('@lapieza.io')) {
+      toast({
+        title: "Email requerido",
+        description: "Ingresa tu email @lapieza.io primero.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/`,
+      });
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "No se pudo enviar el email de recuperación.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Email enviado",
+          description: "Revisa tu email para resetear tu contraseña.",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Ocurrió un error inesperado.",
+        variant: "destructive",
       });
     }
   };
@@ -151,6 +188,16 @@ export const AuthGate = () => {
               >
                 {isSignUp ? '¿Ya tienes cuenta? Inicia sesión' : '¿Necesitas una cuenta? Regístrate'}
               </Button>
+              {!isSignUp && (
+                <Button
+                  type="button"
+                  variant="link"
+                  className="w-full text-sm"
+                  onClick={handleForgotPassword}
+                >
+                  ¿Olvidaste tu contraseña?
+                </Button>
+              )}
             </form>
           </CardContent>
         </Card>
