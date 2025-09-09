@@ -75,47 +75,88 @@ export const CVUploader = () => {
 
   const extractTextFromPDF = async (file: File): Promise<string> => {
     try {
-      // Importar PDF.js dinámicamente
+      console.log('Iniciando extracción de PDF...');
+      
+      // Método alternativo más simple usando FileReader primero
+      const arrayBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as ArrayBuffer);
+        reader.onerror = () => reject(new Error('Error leyendo el archivo'));
+        reader.readAsArrayBuffer(file);
+      });
+
+      console.log('Archivo leído, intentando cargar PDF.js...');
+
+      // Importar PDF.js de forma más compatible
       const pdfjsLib = await import('pdfjs-dist');
       
-      // Configurar worker
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+      // Configurar worker con URL más estable
+      if (typeof window !== 'undefined') {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      }
       
-      // Convertir el archivo a ArrayBuffer
-      const arrayBuffer = await file.arrayBuffer();
-      
-      // Cargar el documento PDF
+      console.log('PDF.js cargado, procesando documento...');
+
+      // Cargar el documento PDF con configuración básica
       const pdf = await pdfjsLib.getDocument({
         data: arrayBuffer,
-        cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
-        cMapPacked: true,
+        verbosity: 0 // Reducir logs
       }).promise;
       
+      console.log(`PDF cargado con ${pdf.numPages} páginas`);
       let fullText = '';
       
-      // Extraer texto de cada página
-      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-        const page = await pdf.getPage(pageNum);
-        const textContent = await page.getTextContent();
-        
-        // Concatenar todo el texto de la página
-        const pageText = textContent.items
-          .map((item: any) => item.str)
-          .join(' ');
-        
-        fullText += pageText + '\n';
+      // Extraer texto de las primeras 5 páginas (suficiente para un CV)
+      const maxPages = Math.min(pdf.numPages, 5);
+      
+      for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
+        try {
+          console.log(`Procesando página ${pageNum}...`);
+          const page = await pdf.getPage(pageNum);
+          const textContent = await page.getTextContent();
+          
+          // Extraer texto de los items
+          const pageText = textContent.items
+            .filter((item: any) => item.str && typeof item.str === 'string')
+            .map((item: any) => item.str.trim())
+            .filter((text: string) => text.length > 0)
+            .join(' ');
+          
+          if (pageText) {
+            fullText += pageText + '\n\n';
+          }
+        } catch (pageError) {
+          console.warn(`Error en página ${pageNum}:`, pageError);
+          // Continuar con la siguiente página
+        }
       }
       
-      if (!fullText.trim()) {
-        throw new Error('No se pudo extraer texto del PDF');
+      // Limpiar y validar el texto extraído
+      const cleanText = fullText.trim().replace(/\s+/g, ' ');
+      
+      if (!cleanText || cleanText.length < 50) {
+        throw new Error('El PDF no contiene suficiente texto legible. Puede ser un PDF escaneado como imagen. Intenta con un PDF que contenga texto seleccionable.');
       }
       
-      console.log('Texto extraído del PDF:', fullText.substring(0, 500) + '...');
-      return fullText;
+      console.log(`Texto extraído exitosamente: ${cleanText.length} caracteres`);
+      console.log('Primeros 200 caracteres:', cleanText.substring(0, 200));
+      
+      return cleanText;
       
     } catch (error) {
-      console.error('Error extrayendo texto del PDF:', error);
-      throw new Error('Error al procesar el archivo PDF. Asegúrate de que sea un PDF válido con texto.');
+      console.error('Error completo:', error);
+      
+      if (error instanceof Error) {
+        if (error.message.includes('texto legible')) {
+          throw error; // Re-lanzar nuestro mensaje personalizado
+        } else if (error.message.includes('InvalidPDFException')) {
+          throw new Error('El archivo no es un PDF válido o está corrupto.');
+        } else if (error.message.includes('PasswordException')) {
+          throw new Error('El PDF está protegido con contraseña. Sube un PDF sin protección.');
+        }
+      }
+      
+      throw new Error('Error al procesar el PDF. Intenta con otro archivo PDF o verifica que contenga texto seleccionable.');
     }
   };
 
