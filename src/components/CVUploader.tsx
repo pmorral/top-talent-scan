@@ -74,38 +74,49 @@ export const CVUploader = () => {
   };
 
   const extractTextFromPDF = async (file: File): Promise<string> => {
-    // This is a simplified version - in production you'd use a proper PDF text extraction library
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        // For demo purposes, we'll simulate extracting text
-        // In production, you'd use libraries like pdf-parse or PDF.js
-        const simulatedText = `
-        John Doe
-        Senior Software Engineer
-        Email: john.doe@email.com
-        Phone: +1234567890
+    try {
+      // Importar PDF.js dinámicamente
+      const pdfjsLib = await import('pdfjs-dist');
+      
+      // Configurar worker
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+      
+      // Convertir el archivo a ArrayBuffer
+      const arrayBuffer = await file.arrayBuffer();
+      
+      // Cargar el documento PDF
+      const pdf = await pdfjsLib.getDocument({
+        data: arrayBuffer,
+        cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
+        cMapPacked: true,
+      }).promise;
+      
+      let fullText = '';
+      
+      // Extraer texto de cada página
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const textContent = await page.getTextContent();
         
-        EXPERIENCE:
-        - Senior Software Engineer at TechCorp (2020-Present)
-        - Software Engineer at StartupXYZ (2018-2020)
-        - Junior Developer at LocalCompany (2016-2018)
+        // Concatenar todo el texto de la página
+        const pageText = textContent.items
+          .map((item: any) => item.str)
+          .join(' ');
         
-        EDUCATION:
-        - Bachelor of Science in Computer Science, University ABC (2012-2016)
-        
-        SKILLS:
-        - JavaScript, React, Node.js
-        - Python, Django
-        - AWS, Docker
-        
-        CERTIFICATIONS:
-        - AWS Certified Solutions Architect (2022)
-        `;
-        resolve(simulatedText);
-      };
-      reader.readAsText(file);
-    });
+        fullText += pageText + '\n';
+      }
+      
+      if (!fullText.trim()) {
+        throw new Error('No se pudo extraer texto del PDF');
+      }
+      
+      console.log('Texto extraído del PDF:', fullText.substring(0, 500) + '...');
+      return fullText;
+      
+    } catch (error) {
+      console.error('Error extrayendo texto del PDF:', error);
+      throw new Error('Error al procesar el archivo PDF. Asegúrate de que sea un PDF válido con texto.');
+    }
   };
 
   const analyzeCV = async () => {
@@ -130,6 +141,12 @@ export const CVUploader = () => {
       // Extract text from PDF
       const cvText = await extractTextFromPDF(file);
       setProgress(50);
+
+      if (!cvText || cvText.trim().length < 100) {
+        throw new Error('El PDF no contiene suficiente texto para analizar. Asegúrate de subir un CV con contenido de texto.');
+      }
+
+      console.log('Texto extraído para análisis:', cvText.substring(0, 300) + '...');
 
       // Create evaluation record
       const { data: evaluation, error: createError } = await supabase
@@ -207,9 +224,21 @@ export const CVUploader = () => {
 
     } catch (error) {
       console.error('Error analyzing CV:', error);
+      
+      let errorMessage = 'Error desconocido';
+      if (error instanceof Error) {
+        if (error.message.includes('PDF')) {
+          errorMessage = error.message;
+        } else if (error.message.includes('analyze-cv')) {
+          errorMessage = 'Error en el análisis de IA. Inténtalo de nuevo.';
+        } else {
+          errorMessage = `Error: ${error.message}`;
+        }
+      }
+      
       toast({
         title: "Error en el análisis",
-        description: error instanceof Error ? error.message : "Error desconocido",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
