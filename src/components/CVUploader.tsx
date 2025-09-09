@@ -179,10 +179,21 @@ export const CVUploader = () => {
       setProgress(100);
 
       if (finalEvaluation.analysis_status === 'completed') {
+        const defaultCriteria: CVAnalysis['criteria'] = {
+          jobStability: { passed: false, message: 'Sin análisis' },
+          seniority: { passed: false, message: 'Sin análisis' },
+          education: { passed: false, message: 'Sin análisis' },
+          language: { passed: false, message: 'Sin análisis' },
+          certifications: { passed: false, message: 'Sin análisis' },
+          careerGrowth: { passed: false, message: 'Sin análisis' },
+          companyExperience: { passed: false, message: 'Sin análisis' },
+          spelling: { passed: false, message: 'Sin análisis' }
+        };
+
         const analysisResult: CVAnalysis = {
-          score: finalEvaluation.score,
-          feedback: finalEvaluation.feedback,
-          criteria: finalEvaluation.criteria as CVAnalysis['criteria']
+          score: finalEvaluation.score || 0,
+          feedback: finalEvaluation.feedback || '',
+          criteria: (finalEvaluation.criteria as CVAnalysis['criteria']) || defaultCriteria
         };
         setAnalysis(analysisResult);
         
