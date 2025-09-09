@@ -6,12 +6,15 @@ import { Label } from '@/components/ui/label';
 import { Shield, Building, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from './AuthProvider';
+import { EmailConfirmation } from '../pages/EmailConfirmation';
 
 export const AuthGate = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
   const { signIn, signUp, loading } = useAuth();
   const { toast } = useToast();
 
@@ -47,10 +50,8 @@ export const AuthGate = () => {
         variant: "destructive",
       });
     } else if (isSignUp) {
-      toast({
-        title: "Registro exitoso",
-        description: "Revisa tu email para confirmar tu cuenta.",
-      });
+      setRegisteredEmail(email);
+      setShowEmailConfirmation(true);
     } else {
       toast({
         title: "Acceso autorizado",
@@ -58,6 +59,20 @@ export const AuthGate = () => {
       });
     }
   };
+
+  if (showEmailConfirmation) {
+    return (
+      <EmailConfirmation 
+        email={registeredEmail}
+        onBack={() => {
+          setShowEmailConfirmation(false);
+          setIsSignUp(false);
+          setEmail('');
+          setPassword('');
+        }}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-corporate/5 p-4">
