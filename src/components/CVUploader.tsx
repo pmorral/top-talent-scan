@@ -74,46 +74,40 @@ export const CVUploader = () => {
   };
 
   const extractTextFromPDF = async (file: File): Promise<string> => {
+    console.log('=== INICIANDO EXTRACCIÓN DE PDF ===');
+    console.log('Archivo:', file.name, 'Tamaño:', file.size, 'Tipo:', file.type);
+    
     try {
-      console.log('Enviando PDF al backend para extracción...');
+      // SOLUCIÓN TEMPORAL: Pedir al usuario que copie y pegue el texto
+      // Esta es la forma más confiable mientras solucionamos la extracción automática
       
-      // Crear FormData para enviar el archivo al backend
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      // Llamar a Edge Function que manejará la extracción
-      const { data, error } = await supabase.functions.invoke('extract-pdf-text', {
-        body: formData,
-      });
+      const userText = prompt(`
+🔍 EXTRACCIÓN DE TEXTO DEL CV
 
-      if (error) {
-        console.error('Error en Edge Function:', error);
-        throw new Error('Error procesando el PDF en el servidor');
+Para garantizar un análisis preciso, por favor:
+
+1. Abre tu PDF en otra pestaña
+2. Selecciona TODO el texto (Ctrl+A / Cmd+A) 
+3. Cópialo (Ctrl+C / Cmd+C)
+4. Pégalo en el campo de abajo
+
+Esto nos ayuda a asegurar que el análisis sea 100% preciso con tu CV real.
+
+PEGA AQUÍ EL TEXTO DE TU CV:`);
+
+      if (!userText || userText.trim().length < 100) {
+        throw new Error('Necesitamos el texto de tu CV para hacer el análisis. Por favor, copia y pega el contenido completo de tu CV.');
       }
 
-      if (!data || !data.text) {
-        throw new Error('No se pudo extraer texto del PDF');
-      }
-
-      const extractedText = data.text.trim();
+      const cleanText = userText.trim();
+      console.log('✅ Texto recibido del usuario:', cleanText.length, 'caracteres');
+      console.log('Muestra:', cleanText.substring(0, 200) + '...');
       
-      if (extractedText.length < 50) {
-        throw new Error('El PDF no contiene suficiente texto legible. Puede ser un PDF escaneado como imagen.');
-      }
-
-      console.log(`Texto extraído exitosamente: ${extractedText.length} caracteres`);
-      console.log('Primeros 200 caracteres:', extractedText.substring(0, 200));
-      
-      return extractedText;
+      return cleanText;
       
     } catch (error) {
-      console.error('Error extrayendo texto del PDF:', error);
-      
-      if (error instanceof Error) {
-        throw error;
-      }
-      
-      throw new Error('Error al procesar el archivo PDF. Intenta con otro archivo.');
+      console.error('❌ Error:', error);
+      throw error;
     }
   };
 
@@ -136,15 +130,15 @@ export const CVUploader = () => {
 
       setProgress(30);
 
-      // Extract text from PDF
+      // Extract text from PDF (user input method)
       const cvText = await extractTextFromPDF(file);
       setProgress(50);
 
       if (!cvText || cvText.trim().length < 100) {
-        throw new Error('El PDF no contiene suficiente texto para analizar. Asegúrate de subir un CV con contenido de texto.');
+        throw new Error('Necesitamos más contenido de tu CV para hacer un análisis completo. Asegúrate de pegar todo el texto de tu CV.');
       }
 
-      console.log('Texto extraído para análisis:', cvText.substring(0, 300) + '...');
+      console.log('✅ Texto listo para análisis:', cvText.substring(0, 300) + '...');
 
       // Create evaluation record
       const { data: evaluation, error: createError } = await supabase
@@ -336,7 +330,7 @@ export const CVUploader = () => {
                 <Progress value={progress} className="w-full" />
                 <p className="text-sm text-muted-foreground">
                   {progress < 30 && "Subiendo archivo..."}
-                  {progress >= 30 && progress < 50 && "Extrayendo texto del PDF..."}
+                  {progress >= 30 && progress < 50 && "Extrayendo texto del CV..."}
                   {progress >= 50 && progress < 70 && "Creando registro de evaluación..."}
                   {progress >= 70 && progress < 90 && "Analizando con IA..."}
                   {progress >= 90 && "Finalizando análisis..."}
