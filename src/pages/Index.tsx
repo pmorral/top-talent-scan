@@ -1,11 +1,21 @@
 import { AuthGate } from '@/components/AuthGate';
 import { CVUploader } from '@/components/CVUploader';
+import { SuperAdminDashboard } from '@/components/SuperAdminDashboard';
 import { useAuth } from '@/components/AuthProvider';
 import { Button } from '@/components/ui/button';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, User, BarChart3 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 const Index = () => {
   const { user, signOut } = useAuth();
+  const [showDashboard, setShowDashboard] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+
+  useEffect(() => {
+    if (user?.email === 'pol@lapieza.io') {
+      setIsSuperAdmin(true);
+    }
+  }, [user]);
 
   if (!user) {
     return <AuthGate />;
@@ -31,6 +41,17 @@ const Index = () => {
                 <User className="h-4 w-4" />
                 {user.email}
               </div>
+              {isSuperAdmin && (
+                <Button 
+                  variant={showDashboard ? "default" : "outline"}
+                  size="sm" 
+                  onClick={() => setShowDashboard(!showDashboard)}
+                  className="flex items-center gap-2"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  {showDashboard ? 'Evaluador' : 'Dashboard'}
+                </Button>
+              )}
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -47,7 +68,11 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        <CVUploader />
+        {isSuperAdmin && showDashboard ? (
+          <SuperAdminDashboard />
+        ) : (
+          <CVUploader />
+        )}
       </main>
 
       {/* Footer */}
