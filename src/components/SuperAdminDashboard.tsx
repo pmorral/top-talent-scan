@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Users, FileText, TrendingUp, BarChart3, Eye, Calendar } from 'lucide-react';
+import { Users, FileText, TrendingUp, BarChart3, Eye, Calendar, Download, Building, Briefcase } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -12,11 +12,14 @@ interface CVEvaluation {
   id: string;
   user_id: string;
   file_name: string;
+  file_path: string;
   file_size: number;
   analysis_status: string;
   score: number | null;
   feedback: string | null;
   criteria: any;
+  role_info: string | null;
+  company_info: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -135,6 +138,41 @@ export const SuperAdminDashboard = () => {
     }
   };
 
+  const downloadCV = async (evaluation: EvaluationWithProfile) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('cv-files')
+        .download(evaluation.file_path);
+
+      if (error) {
+        throw error;
+      }
+
+      // Create blob URL and trigger download
+      const blob = data;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = evaluation.file_name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Descarga iniciada",
+        description: `Descargando ${evaluation.file_name}`,
+      });
+    } catch (error) {
+      console.error('Error downloading CV:', error);
+      toast({
+        title: "Error en descarga",
+        description: "No se pudo descargar el archivo",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto space-y-6">
@@ -234,6 +272,7 @@ export const SuperAdminDashboard = () => {
                     <tr className="border-b">
                       <th className="text-left p-4">Usuario</th>
                       <th className="text-left p-4">Archivo CV</th>
+                      <th className="text-left p-4">Rol/Empresa</th>
                       <th className="text-left p-4">Estado</th>
                       <th className="text-left p-4">Puntuación</th>
                       <th className="text-left p-4">Fecha</th>
@@ -258,6 +297,25 @@ export const SuperAdminDashboard = () => {
                           </div>
                         </td>
                         <td className="p-4">
+                          <div className="space-y-1">
+                            {evaluation.role_info && (
+                              <div className="flex items-start gap-1">
+                                <Briefcase className="h-3 w-3 mt-0.5 text-muted-foreground flex-shrink-0" />
+                                <p className="text-sm font-medium line-clamp-2">{evaluation.role_info}</p>
+                              </div>
+                            )}
+                            {evaluation.company_info && (
+                              <div className="flex items-start gap-1">
+                                <Building className="h-3 w-3 mt-0.5 text-muted-foreground flex-shrink-0" />
+                                <p className="text-sm text-muted-foreground line-clamp-2">{evaluation.company_info}</p>
+                              </div>
+                            )}
+                            {!evaluation.role_info && !evaluation.company_info && (
+                              <span className="text-sm text-muted-foreground">Sin información</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-4">
                           {getStatusBadge(evaluation.analysis_status)}
                         </td>
                         <td className="p-4">
@@ -278,15 +336,25 @@ export const SuperAdminDashboard = () => {
                           </div>
                         </td>
                         <td className="p-4">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSelectedEvaluation(evaluation)}
-                            disabled={evaluation.analysis_status !== 'completed'}
-                          >
-                            <Eye className="h-4 w-4 mr-2" />
-                            Ver detalles
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSelectedEvaluation(evaluation)}
+                              disabled={evaluation.analysis_status !== 'completed'}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              Ver detalles
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => downloadCV(evaluation)}
+                            >
+                              <Download className="h-4 w-4 mr-2" />
+                              Descargar
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -316,6 +384,30 @@ export const SuperAdminDashboard = () => {
             </Button>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Role and Company Information */}
+            {(selectedEvaluation.role_info || selectedEvaluation.company_info) && (
+              <div className="grid gap-4 md:grid-cols-2">
+                {selectedEvaluation.role_info && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Briefcase className="h-4 w-4 text-muted-foreground" />
+                      <h3 className="font-medium">Rol Aplicado</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground pl-6">{selectedEvaluation.role_info}</p>
+                  </div>
+                )}
+                {selectedEvaluation.company_info && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Building className="h-4 w-4 text-muted-foreground" />
+                      <h3 className="font-medium">Empresa/Industria</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground pl-6">{selectedEvaluation.company_info}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Score Display */}
             <div className={`text-center p-6 rounded-lg ${getScoreBgColor(selectedEvaluation.score || 0)}`}>
               <div className={`text-4xl font-bold ${getScoreColor(selectedEvaluation.score || 0)}`}>

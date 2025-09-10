@@ -244,7 +244,9 @@ export const CVUploader = () => {
           file_name: file.name,
           file_path: fileName,
           file_size: file.size,
-          analysis_status: 'pending'
+          analysis_status: 'pending',
+          role_info: roleInfo.trim(),
+          company_info: companyInfo.trim()
         })
         .select()
         .single();

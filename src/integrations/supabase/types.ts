@@ -17,6 +17,7 @@ export type Database = {
       cv_evaluations: {
         Row: {
           analysis_status: string
+          company_info: string | null
           created_at: string
           criteria: Json | null
           feedback: string | null
@@ -24,12 +25,14 @@ export type Database = {
           file_path: string
           file_size: number
           id: string
+          role_info: string | null
           score: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
           analysis_status?: string
+          company_info?: string | null
           created_at?: string
           criteria?: Json | null
           feedback?: string | null
@@ -37,12 +40,14 @@ export type Database = {
           file_path: string
           file_size: number
           id?: string
+          role_info?: string | null
           score?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
           analysis_status?: string
+          company_info?: string | null
           created_at?: string
           criteria?: Json | null
           feedback?: string | null
@@ -50,6 +55,7 @@ export type Database = {
           file_path?: string
           file_size?: number
           id?: string
+          role_info?: string | null
           score?: number | null
           updated_at?: string
           user_id?: string
