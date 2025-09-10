@@ -43,18 +43,55 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    const prompt = `Analiza este CV y evalúalo según estos 10 criterios específicos para LaPieza:
+    const prompt = `Analiza este CV y evalúalo según estos 10 criterios específicos para LaPieza.
 
-1. ESTABILIDAD LABORAL: Si ha estado menos de 1 año en 2 de sus últimos 5 trabajos = RED FLAG
-2. SENIORITY: Si tiene menos de 3 años de experiencia total = RED FLAG  
-3. EDUCACIÓN: Si no tiene carrera universitaria terminada (Lic./Ing./Bachelor's) = RED FLAG
-4. INGLÉS: Si no habla mínimo B2/intermedio-avanzado = RED FLAG (si el CV está en inglés, considerar OK)
-5. CERTIFICACIONES: Debe tener al menos 1 certificación/curso relevante para su posición actual
-6. EVOLUCIÓN PROFESIONAL: Debe haber mostrado progreso profesional en los últimos 6 años, como ascensos dentro de la misma empresa O mejora de posición/seniority entre empresas (ej: de "Senior Analyst" a "Lead" o "Manager", de "Coordinator" a "Specialist" o "Senior", etc.). Excepto si ya es C-level/Director/VP desde hace más de 6 años.
-7. EXPERIENCIA EMPRESARIAL: Debe haber trabajado en empresa internacional/Fortune 500/Big Four/Startup tech (no solo PYMES tradicionales)
-8. ORTOGRAFÍA Y GRAMÁTICA: CRITERIO MUY ESTRICTO. Evalúa minuciosamente: faltas de ortografía, acentos faltantes o incorrectos (ej: "administracion" sin tilde, "mas" en lugar de "más", "analisis" sin tilde, "coordinacion" sin tilde), errores de puntuación, mayúsculas incorrectas, concordancia gramatical, uso incorrecto de tiempo verbales, palabras mal escritas, anglicismos innecesarios. Si encuentras 2 o más errores ortográficos/gramaticales = RED FLAG automático. Presta especial atención a: tildes en palabras agudas terminadas en vocal/n/s (ej: administración, gestión, coordinación), palabras esdrújulas que SIEMPRE llevan tilde (ej: análisis, prácticas), diferencia entre "más/mas", "sí/si", "dé/de", "sé/se", etc.
-9. FIT CON EL ROL: Evalúa si la experiencia del candidato encaja con el rol que está aplicando. RED FLAG si: a) No tiene experiencia relevante en el área, b) Está SOBRECALIFICADO con un claro downgrade jerárquico (ej: Head/Director → Manager, Manager/Lead → Analyst/Specialist, Senior → Junior, VP/C-Level → cualquier posición inferior), c) Su progresión profesional sugiere que busca algo diferente, d) Menciona explícitamente buscar roles que no coinciden. JERARQUÍA ESTRICTA: Head > Manager > Lead > Senior > Specialist > Analyst > Coordinator > Junior. Cualquier movimiento hacia abajo en esta jerarquía es RED FLAG automático.
-10. FIT CON LA EMPRESA: Evalúa si la experiencia del candidato encaja con la empresa/industria. Considera si ha trabajado en industrias similares o si la transición tiene sentido.
+REGLAS GLOBALES:
+- Solo existen 2 resultados para cada criterio: "PASA" o "RED FLAG"
+- Debes responder con "PASA:" o "RED FLAG:" al inicio de cada mensaje explicativo
+- Si no hay evidencia suficiente en el CV para un criterio, considera RED FLAG
+- Sé estricto en la evaluación
+
+CRITERIOS:
+
+1. ESTABILIDAD LABORAL
+PASA si: Ha estado 1 año o más en la mayoría de sus últimos 5 trabajos
+RED FLAG si: Ha estado menos de 1 año en 2 o más de sus últimos 5 trabajos, o no hay suficiente información de fechas
+
+2. SENIORITY
+PASA si: Tiene 3 años o más de experiencia profesional total
+RED FLAG si: Tiene menos de 3 años de experiencia total, o no se puede determinar la experiencia total
+
+3. EDUCACIÓN
+PASA si: Tiene carrera universitaria terminada (Licenciatura/Ingeniería/Bachelor's/Master's/PhD)
+RED FLAG si: No tiene carrera universitaria terminada, solo tiene carrera técnica, o no se especifica educación
+
+4. INGLÉS
+PASA si: Menciona nivel B2+ o intermedio-avanzado, o el CV está escrito en inglés, o trabajó en empresa internacional
+RED FLAG si: No menciona inglés, indica nivel básico/A1/A2, o no hay evidencia de manejo del idioma
+
+5. CERTIFICACIONES
+PASA si: Tiene al menos 1 certificación o curso relevante para su área profesional
+RED FLAG si: No tiene certificaciones relevantes, o no menciona ninguna certificación
+
+6. EVOLUCIÓN PROFESIONAL
+PASA si: Muestra progreso profesional en los últimos 6 años (ascensos, aumento de responsabilidades, mejora de seniority), O ya es C-level/Director/VP desde hace más de 6 años
+RED FLAG si: No muestra progreso, se ha mantenido en el mismo nivel, o hay retroceso profesional
+
+7. EXPERIENCIA EMPRESARIAL
+PASA si: Ha trabajado en empresa internacional, Fortune 500, Big Four, startup tech, o corporativo grande
+RED FLAG si: Solo ha trabajado en PYMES tradicionales locales, o no se puede determinar el tipo de empresa
+
+8. ORTOGRAFÍA Y GRAMÁTICA
+PASA si: El CV tiene máximo 1 error ortográfico/gramatical menor
+RED FLAG si: Tiene 2 o más errores ortográficos/gramaticales (incluyendo tildes faltantes, puntuación incorrecta, mayúsculas mal usadas, concordancia incorrecta)
+
+9. FIT CON EL ROL
+PASA si: Su experiencia es relevante para el rol y no hay downgrade jerárquico significativo
+RED FLAG si: No tiene experiencia relevante, está sobrecalificado con downgrade jerárquico claro (Head→Manager, Manager→Analyst, etc.), o busca algo completamente diferente. JERARQUÍA: Head > Manager > Lead > Senior > Specialist > Analyst > Coordinator > Junior
+
+10. FIT CON LA EMPRESA
+PASA si: Su experiencia encaja con la industria/empresa, o la transición tiene sentido lógico
+RED FLAG si: Su experiencia no encaja con la industria, no hay conexión lógica, o falta información sobre su background empresarial
 
 INFORMACIÓN DEL ROL: ${roleInfo}
 
