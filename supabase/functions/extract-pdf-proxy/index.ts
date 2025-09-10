@@ -56,9 +56,12 @@ serve(async (req) => {
       throw new Error('La API devolvió una respuesta vacía');
     }
 
-    // Handle different possible response formats
+    // Handle different possible response formats from tech team's API
     let extractedText = '';
-    if (data.text) {
+    if (data.result) {
+      // Tech team's API returns { result: "text...", personal_data: {...} }
+      extractedText = data.result;
+    } else if (data.text) {
       extractedText = data.text;
     } else if (data.content) {
       extractedText = data.content;
