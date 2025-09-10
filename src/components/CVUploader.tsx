@@ -131,8 +131,8 @@ export const CVUploader = () => {
 
       const extractedText = data.text.trim();
       
-      if (extractedText.length < 50) {
-        throw new Error('El PDF contiene muy poco texto. Asegúrate de que sea un CV con texto seleccionable, no una imagen escaneada.');
+      if (extractedText.length < 100) {
+        throw new Error('No se pudo extraer texto suficiente del CV. El análisis no se puede realizar con este archivo. Por favor, sube un CV donde el texto sea seleccionable (no una imagen escaneada).');
       }
 
       console.log('✅ Texto extraído exitosamente:', extractedText.length, 'caracteres');
@@ -236,7 +236,7 @@ export const CVUploader = () => {
       });
 
       if (!cvText || cvText.trim().length < 100) {
-        throw new Error('Necesitamos más contenido de tu CV para hacer un análisis completo. Asegúrate de pegar todo el texto de tu CV.');
+        throw new Error('No se pudo extraer texto suficiente del CV. El análisis no se puede realizar con este archivo. Por favor, sube un CV donde el texto sea seleccionable (no una imagen escaneada).');
       }
 
       console.log('✅ Texto listo para análisis:', cvText.substring(0, 300) + '...');
