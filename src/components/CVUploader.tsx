@@ -75,7 +75,7 @@ export const CVUploader = () => {
   };
 
   const extractTextFromPDF = async (fileName: string): Promise<string> => {
-    console.log('=== INICIANDO EXTRACCIÓN DE PDF CON API ===');
+    console.log('=== INICIANDO EXTRACCIÓN DE PDF CON EDGE FUNCTION ===');
     console.log('Archivo:', fileName);
     
     try {
@@ -95,85 +95,41 @@ export const CVUploader = () => {
 
       console.log('✅ Signed URL obtenida:', signedUrlData.signedUrl);
 
-      // Call tech team's API for PDF extraction with timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      // Call our Edge Function proxy instead of calling the API directly
+      console.log('🔄 Llamando Edge Function proxy...');
+      const { data, error } = await supabase.functions.invoke('extract-pdf-proxy', {
+        body: {
+          cv_url: signedUrlData.signedUrl,
+          mode: "text",
+          need_personal_data: true,
+        },
+      });
 
-      try {
-        const response = await axios.post(
-          "https://interview-api-dev.lapieza.io/api/v1/analize/cv",
-          {
-            cv_url: signedUrlData.signedUrl,
-            mode: "text",
-            need_personal_data: true,
-          },
-          {
-            headers: {
-              "Content-Type": "application/json",
-            },
-            timeout: 30000,
-            signal: controller.signal,
-          }
-        );
-
-        clearTimeout(timeoutId);
-        console.log('✅ Respuesta de API recibida:', response.status, response.statusText);
-        console.log('📄 Estructura de respuesta:', Object.keys(response.data || {}));
-
-        // Validate response structure
-        if (!response.data) {
-          throw new Error('La API devolvió una respuesta vacía');
-        }
-
-        // Handle different possible response formats
-        let extractedText = '';
-        if (response.data.text) {
-          extractedText = response.data.text;
-        } else if (response.data.content) {
-          extractedText = response.data.content;
-        } else if (response.data.data && response.data.data.text) {
-          extractedText = response.data.data.text;
-        } else if (typeof response.data === 'string') {
-          extractedText = response.data;
-        } else {
-          console.error('❌ Formato de respuesta inesperado:', response.data);
-          throw new Error('La API devolvió un formato de respuesta inesperado');
-        }
-
-        if (!extractedText || typeof extractedText !== 'string') {
-          throw new Error('No se pudo extraer texto del PDF. El archivo podría estar corrupto o ser una imagen escaneada.');
-        }
-
-        const cleanText = extractedText.trim();
-        
-        if (cleanText.length < 50) {
-          throw new Error('El PDF contiene muy poco texto. Asegúrate de que sea un CV con texto seleccionable, no una imagen escaneada.');
-        }
-
-        console.log('✅ Texto extraído exitosamente:', cleanText.length, 'caracteres');
-        console.log('📝 Muestra del contenido:', cleanText.substring(0, 200) + '...');
-        
-        return cleanText;
-
-      } catch (axiosError: any) {
-        clearTimeout(timeoutId);
-        
-        if (axiosError.code === 'ECONNABORTED' || axiosError.name === 'AbortError') {
-          throw new Error('La extracción del PDF tardó demasiado. Inténtalo con un archivo más pequeño.');
-        }
-        
-        if (axiosError.response) {
-          console.error('❌ Error de respuesta de API:', axiosError.response.status, axiosError.response.data);
-          throw new Error(`Error del servidor de extracción (${axiosError.response.status}): ${axiosError.response.data?.message || 'Error desconocido'}`);
-        }
-        
-        if (axiosError.request) {
-          console.error('❌ Error de red:', axiosError.message);
-          throw new Error('No se pudo conectar con el servidor de extracción. Verifica tu conexión a internet.');
-        }
-        
-        throw axiosError;
+      if (error) {
+        console.error('❌ Error en Edge Function:', error);
+        throw new Error(`Error en el proxy de extracción: ${error.message}`);
       }
+
+      console.log('✅ Respuesta de Edge Function recibida:', data);
+
+      if (!data.success) {
+        throw new Error(data.error || 'Error desconocido en la extracción');
+      }
+
+      if (!data.text) {
+        throw new Error('La API no devolvió texto extraído del PDF');
+      }
+
+      const extractedText = data.text.trim();
+      
+      if (extractedText.length < 50) {
+        throw new Error('El PDF contiene muy poco texto. Asegúrate de que sea un CV con texto seleccionable, no una imagen escaneada.');
+      }
+
+      console.log('✅ Texto extraído exitosamente:', extractedText.length, 'caracteres');
+      console.log('📝 Muestra del contenido:', extractedText.substring(0, 200) + '...');
+      
+      return extractedText;
       
     } catch (error) {
       console.error('❌ Error general en extracción:', error);
@@ -185,6 +141,7 @@ export const CVUploader = () => {
             error.message.includes('muy poco texto') ||
             error.message.includes('tardó demasiado') ||
             error.message.includes('Error del servidor') ||
+            error.message.includes('Error en el proxy') ||
             error.message.includes('No se pudo conectar')) {
           throw error;
         }
