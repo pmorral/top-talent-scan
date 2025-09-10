@@ -203,20 +203,25 @@ export const CVUploader = () => {
       setIsAnalyzing(true);
       setProgress(10);
       
-      // Sanitize filename: only remove characters that cause Supabase Storage issues
-      // Keep accents and letters for proper spelling analysis
+      // Sanitize filename for Supabase Storage (this doesn't affect content analysis)
+      // The PDF content keeps all accents for proper spelling analysis
       const sanitizedName = file.name
-        .replace(/\s+/g, '_')                // Replace spaces with underscores
-        .replace(/[<>:"/\\|?*]/g, '_')       // Replace filesystem invalid characters
-        .replace(/\.+/g, '.')                // Replace multiple dots with single dot
+        .normalize('NFD')                    // Decompose accented characters
+        .replace(/[\u0300-\u036f]/g, '')     // Remove accent marks (diacritics)
+        .replace(/[^a-zA-Z0-9.-]/g, '_')     // Replace any remaining invalid chars
+        .replace(/_{2,}/g, '_')              // Replace multiple underscores with single
+        .replace(/^_|_$/g, '')               // Remove leading/trailing underscores
+        .replace(/\.+/g, '.')                // Replace multiple dots with single
         .replace(/^\./, '')                  // Remove leading dot
         .replace(/\.$/, '')                  // Remove trailing dot
+        .toLowerCase();
 
       // Create unique filename with timestamp
       const fileName = `${user.id}/${Date.now()}-${sanitizedName}`;
       
       console.log('📁 Archivo original:', file.name);
-      console.log('📁 Archivo sanitizado:', fileName);
+      console.log('📁 Archivo sanitizado para storage:', fileName);
+      console.log('🔤 NOTA: El contenido del PDF mantiene todos los acentos para análisis de ortografía');
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('cv-files')
         .upload(fileName, file);
