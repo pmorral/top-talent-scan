@@ -37,7 +37,7 @@ export const CVUploader = () => {
   const [progress, setProgress] = useState(0);
   const [roleInfo, setRoleInfo] = useState('');
   const [companyInfo, setCompanyInfo] = useState('');
-  const [jobDescription, setJobDescription] = useState('');
+  
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -168,7 +168,7 @@ export const CVUploader = () => {
     if (!roleInfo.trim()) {
       toast({
         title: "Información faltante",
-        description: "Por favor, describe el rol al que está aplicando.",
+        description: "Por favor, completa los detalles del rol.",
         variant: "destructive",
       });
       return;
@@ -226,8 +226,8 @@ export const CVUploader = () => {
       const cvText = await extractTextFromPDF(fileName);
       setProgress(60);
       
-      // Extract job description text if provided
-      let jobDescriptionText = jobDescription.trim() || null;
+      // Use role info as job description text
+      let jobDescriptionText = roleInfo.trim() || null;
       
       console.log('✅ Extracción completada, iniciando análisis...');
       toast({
@@ -271,7 +271,7 @@ export const CVUploader = () => {
             cvText: cvText,
             roleInfo: roleInfo.trim(),
             companyInfo: companyInfo.trim(),
-            jobDescriptionText: jobDescriptionText || null
+            jobDescriptionText: jobDescriptionText
           }
         });
 
@@ -389,10 +389,10 @@ export const CVUploader = () => {
           {/* Role and Company Information */}
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="role-info">Rol al que está aplicando *</Label>
+              <Label htmlFor="role-info">Detalles o job description del rol *</Label>
               <Textarea
                 id="role-info"
-                placeholder="Ej: Senior Marketing Manager, área de growth marketing, requiere 5+ años de experiencia en marketing digital..."
+                placeholder="Ej: Senior Marketing Manager, área de growth marketing, requiere 5+ años de experiencia en marketing digital. Responsabilidades: desarrollar estrategias de crecimiento, gestionar campañas digitales, analizar métricas..."
                 value={roleInfo}
                 onChange={(e) => setRoleInfo(e.target.value)}
                 className="min-h-20"
@@ -412,21 +412,6 @@ export const CVUploader = () => {
             </div>
           </div>
 
-          {/* Job Description (Optional) */}
-          <div className="space-y-2">
-            <Label htmlFor="job-description">Descripción del Trabajo (Opcional)</Label>
-            <p className="text-sm text-muted-foreground">
-              Pega aquí la descripción completa del trabajo para una evaluación más precisa del fit con el rol.
-            </p>
-            <Textarea
-              id="job-description"
-              placeholder="Pega aquí la descripción completa del trabajo, incluyendo responsabilidades, requisitos, habilidades requeridas, etc..."
-              value={jobDescription}
-              onChange={(e) => setJobDescription(e.target.value)}
-              className="min-h-32"
-              disabled={isAnalyzing}
-            />
-          </div>
 
           {/* Upload Area */}
           <div
