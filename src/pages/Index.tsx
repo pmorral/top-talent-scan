@@ -12,7 +12,7 @@ const Index = () => {
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   useEffect(() => {
-    if (user?.email === 'pol@lapieza.io') {
+    if (user?.email === 'pol@lapieza.io' || user?.email === 'alexa.villegas@lapieza.io') {
       setIsSuperAdmin(true);
     }
   }, [user]);
