@@ -19,7 +19,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { evaluationId, cvText, roleInfo, companyInfo } = await req.json();
+    const { evaluationId, cvText, roleInfo, companyInfo, jobDescriptionText } = await req.json();
     
     if (!evaluationId || !cvText) {
       throw new Error('Missing evaluationId or cvText');
@@ -60,7 +60,12 @@ INFORMACIÓN DEL ROL: ${roleInfo}
 
 INFORMACIÓN DE LA EMPRESA: ${companyInfo}
 
-CV A ANALIZAR:
+${jobDescriptionText ? `DESCRIPCIÓN COMPLETA DEL TRABAJO:
+${jobDescriptionText}
+
+IMPORTANTE: Utiliza la descripción completa del trabajo para evaluar con mayor precisión el FIT CON EL ROL. Compara las responsabilidades, requisitos, habilidades y experiencia mencionados en la descripción del trabajo con el perfil del candidato.
+
+` : ''}CV A ANALIZAR:
 ${cvText}
 
 Responde EXACTAMENTE en este formato JSON:
@@ -76,7 +81,7 @@ Responde EXACTAMENTE en este formato JSON:
     "careerGrowth": {"passed": [true/false], "message": "[explicación específica]"},
     "companyExperience": {"passed": [true/false], "message": "[explicación específica]"},
     "spelling": {"passed": [true/false], "message": "[explicación específica]"},
-    "roleFit": {"passed": [true/false], "message": "[explicación específica considerando el rol: ${roleInfo}]"},
+    "roleFit": {"passed": [true/false], "message": "[explicación específica${jobDescriptionText ? ' basada en la descripción completa del trabajo proporcionada' : ' considerando el rol: ' + roleInfo}]"},
     "companyFit": {"passed": [true/false], "message": "[explicación específica considerando la empresa: ${companyInfo}]"}
   }
 }`;

@@ -25,6 +25,9 @@ export type Database = {
           file_path: string
           file_size: number
           id: string
+          job_description_file_name: string | null
+          job_description_file_path: string | null
+          job_description_text: string | null
           role_info: string | null
           score: number | null
           updated_at: string
@@ -40,6 +43,9 @@ export type Database = {
           file_path: string
           file_size: number
           id?: string
+          job_description_file_name?: string | null
+          job_description_file_path?: string | null
+          job_description_text?: string | null
           role_info?: string | null
           score?: number | null
           updated_at?: string
@@ -55,6 +61,9 @@ export type Database = {
           file_path?: string
           file_size?: number
           id?: string
+          job_description_file_name?: string | null
+          job_description_file_path?: string | null
+          job_description_text?: string | null
           role_info?: string | null
           score?: number | null
           updated_at?: string
