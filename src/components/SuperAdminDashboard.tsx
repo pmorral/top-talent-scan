@@ -209,16 +209,29 @@ export const SuperAdminDashboard = () => {
 
   const downloadCV = async (evaluation: EvaluationWithProfile) => {
     try {
-      const { data, error } = await supabase.storage
+      // Create a signed URL for download instead of using storage.download()
+      const { data: signedUrlData, error: urlError } = await supabase.storage
         .from('cv-files')
-        .download(evaluation.file_path);
+        .createSignedUrl(evaluation.file_path, 60); // 1 minute expiry
 
-      if (error) {
-        throw error;
+      if (urlError) {
+        throw urlError;
       }
 
+      if (!signedUrlData?.signedUrl) {
+        throw new Error('No se pudo generar la URL de descarga');
+      }
+
+      // Use the signed URL to download the file
+      const response = await fetch(signedUrlData.signedUrl);
+      
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+      
       // Create blob URL and trigger download
-      const blob = data;
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -236,7 +249,7 @@ export const SuperAdminDashboard = () => {
       console.error('Error downloading CV:', error);
       toast({
         title: "Error en descarga",
-        description: "No se pudo descargar el archivo",
+        description: "No se pudo descargar el archivo. Verifique los permisos de acceso.",
         variant: "destructive",
       });
     }
