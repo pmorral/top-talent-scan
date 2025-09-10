@@ -361,9 +361,8 @@ export const CVUploader = () => {
   };
 
   const getScoreDefinition = (score: number) => {
-    if (score === 10) return "HIRE";
-    if (score === 9) return "BIEN - A analizar criterio faltante";
-    if (score === 8) return "PROBABLEMENTE NO - A validar";
+    if (score >= 9) return "HIRE";
+    if (score >= 7) return "MAYBE";
     return "NO HIRE";
   };
 
