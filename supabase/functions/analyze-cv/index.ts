@@ -53,7 +53,7 @@ serve(async (req) => {
 6. EVOLUCIÓN PROFESIONAL: Debe haber mostrado progreso profesional en los últimos 6 años, como ascensos dentro de la misma empresa O mejora de posición/seniority entre empresas (ej: de "Senior Analyst" a "Lead" o "Manager", de "Coordinator" a "Specialist" o "Senior", etc.). Excepto si ya es C-level/Director/VP desde hace más de 6 años.
 7. EXPERIENCIA EMPRESARIAL: Debe haber trabajado en empresa internacional/Fortune 500/Big Four/Startup tech (no solo PYMES tradicionales)
 8. ORTOGRAFÍA: Más de 3 errores ortográficos = RED FLAG
-9. FIT CON EL ROL: Evalúa si la experiencia del candidato encaja con el rol que está aplicando. Considera si es la misma área, si tiene sentido con su progresión profesional, y si no menciona buscar algo completamente diferente en su CV.
+9. FIT CON EL ROL: Evalúa si la experiencia del candidato encaja con el rol que está aplicando. RED FLAG si: a) No tiene experiencia relevante en el área, b) Está SOBRECALIFICADO (ej: es Manager/Director aplicando a roles Analyst/Junior/Coordinator), c) Su progresión profesional sugiere que busca algo diferente, d) Menciona explícitamente buscar roles que no coinciden. La sobrecalificación es tan problemática como la falta de experiencia.
 10. FIT CON LA EMPRESA: Evalúa si la experiencia del candidato encaja con la empresa/industria. Considera si ha trabajado en industrias similares o si la transición tiene sentido.
 
 INFORMACIÓN DEL ROL: ${roleInfo}
