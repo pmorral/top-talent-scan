@@ -353,6 +353,13 @@ export const CVUploader = () => {
     return 'bg-destructive/10';
   };
 
+  const getScoreDefinition = (score: number) => {
+    if (score === 10) return "HIRE";
+    if (score === 9) return "BIEN - A analizar criterio faltante";
+    if (score === 8) return "PROBABLEMENTE NO - A validar";
+    return "NO HIRE";
+  };
+
   const CriteriaIcon = ({ passed }: { passed: boolean }) => {
     if (passed) return <CheckCircle className="h-4 w-4 text-success" />;
     return <XCircle className="h-4 w-4 text-destructive" />;
@@ -484,8 +491,7 @@ export const CVUploader = () => {
                 </div>
                 <div className="space-y-2">
                   <h3 className="text-xl font-semibold">
-                    {analysis.score >= 8 ? 'Perfil Excelente' : 
-                     analysis.score >= 6 ? 'Perfil Bueno' : 'Perfil Necesita Mejoras'}
+                    {getScoreDefinition(analysis.score)}
                   </h3>
                   <p className="text-muted-foreground max-w-2xl mx-auto">
                     {analysis.feedback}
