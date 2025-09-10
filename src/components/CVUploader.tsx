@@ -203,8 +203,21 @@ export const CVUploader = () => {
       setIsAnalyzing(true);
       setProgress(10);
       
-      // Upload file to Supabase Storage
-      const fileName = `${user.id}/${Date.now()}-${file.name}`;
+      // Sanitize filename: remove special characters, spaces, and ensure single extension
+      const sanitizedName = file.name
+        .normalize('NFD')                    // Normalize unicode characters
+        .replace(/[\u0300-\u036f]/g, '')     // Remove accents
+        .replace(/[^a-zA-Z0-9.-]/g, '_')     // Replace invalid chars with underscore
+        .replace(/\.+/g, '.')                // Replace multiple dots with single dot
+        .replace(/^\./, '')                  // Remove leading dot
+        .replace(/\.$/, '')                  // Remove trailing dot
+        .toLowerCase();
+
+      // Create unique filename with timestamp
+      const fileName = `${user.id}/${Date.now()}-${sanitizedName}`;
+      
+      console.log('📁 Archivo original:', file.name);
+      console.log('📁 Archivo sanitizado:', fileName);
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('cv-files')
         .upload(fileName, file);
