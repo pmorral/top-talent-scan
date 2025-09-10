@@ -3,10 +3,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Users, FileText, TrendingUp, BarChart3, Eye, Calendar, Download, Building, Briefcase } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Users, FileText, TrendingUp, BarChart3, Eye, CalendarIcon, Download, Building, Briefcase, Filter, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface CVEvaluation {
   id: string;
@@ -38,6 +43,8 @@ interface EvaluationWithProfile extends CVEvaluation {
 
 export const SuperAdminDashboard = () => {
   const [evaluations, setEvaluations] = useState<EvaluationWithProfile[]>([]);
+  const [filteredEvaluations, setFilteredEvaluations] = useState<EvaluationWithProfile[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [stats, setStats] = useState({
     totalEvaluations: 0,
     totalUsers: 0,
@@ -46,11 +53,21 @@ export const SuperAdminDashboard = () => {
   });
   const [loading, setLoading] = useState(true);
   const [selectedEvaluation, setSelectedEvaluation] = useState<EvaluationWithProfile | null>(null);
+  
+  // Filter states
+  const [dateFrom, setDateFrom] = useState<Date>();
+  const [dateTo, setDateTo] = useState<Date>();
+  const [selectedUserId, setSelectedUserId] = useState<string>('all');
+  
   const { toast } = useToast();
 
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  useEffect(() => {
+    applyFilters();
+  }, [evaluations, dateFrom, dateTo, selectedUserId]);
 
   const fetchDashboardData = async () => {
     try {
@@ -85,6 +102,7 @@ export const SuperAdminDashboard = () => {
       }) || [];
 
       setEvaluations(evaluationsWithProfiles);
+      setProfiles(profilesData || []);
 
       // Calculate statistics
       const totalEvaluations = evaluationsWithProfiles.length;
@@ -112,6 +130,57 @@ export const SuperAdminDashboard = () => {
       setLoading(false);
     }
   };
+
+  const applyFilters = () => {
+    let filtered = [...evaluations];
+
+    // Filter by date range
+    if (dateFrom) {
+      filtered = filtered.filter(evaluation => 
+        new Date(evaluation.created_at) >= dateFrom
+      );
+    }
+    
+    if (dateTo) {
+      const endOfDay = new Date(dateTo);
+      endOfDay.setHours(23, 59, 59, 999);
+      filtered = filtered.filter(evaluation => 
+        new Date(evaluation.created_at) <= endOfDay
+      );
+    }
+
+    // Filter by user
+    if (selectedUserId !== 'all') {
+      filtered = filtered.filter(evaluation => 
+        evaluation.user_id === selectedUserId
+      );
+    }
+
+    setFilteredEvaluations(filtered);
+
+    // Update stats based on filtered data
+    const totalEvaluations = filtered.length;
+    const uniqueUsers = new Set(filtered.map(e => e.user_id)).size;
+    const completedEvals = filtered.filter(e => e.analysis_status === 'completed');
+    const averageScore = completedEvals.length > 0 
+      ? completedEvals.reduce((sum, e) => sum + (e.score || 0), 0) / completedEvals.length 
+      : 0;
+
+    setStats({
+      totalEvaluations,
+      totalUsers: uniqueUsers,
+      averageScore: Math.round(averageScore * 10) / 10,
+      completedAnalyses: completedEvals.length
+    });
+  };
+
+  const clearFilters = () => {
+    setDateFrom(undefined);
+    setDateTo(undefined);
+    setSelectedUserId('all');
+  };
+
+  const hasActiveFilters = dateFrom || dateTo || selectedUserId !== 'all';
 
   const getScoreColor = (score: number) => {
     if (score >= 8) return 'text-success';
@@ -250,20 +319,142 @@ export const SuperAdminDashboard = () => {
         </Card>
       </div>
 
+      {/* Filters Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Filtros
+          </CardTitle>
+          <CardDescription>
+            Filtra las evaluaciones por fecha y usuario
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-4">
+            {/* Date From Filter */}
+            <div className="space-y-2">
+              <Label>Fecha Desde</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "justify-start text-left font-normal",
+                      !dateFrom && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateFrom ? format(dateFrom, "dd/MM/yyyy") : <span>Seleccionar fecha</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dateFrom}
+                    onSelect={setDateFrom}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Date To Filter */}
+            <div className="space-y-2">
+              <Label>Fecha Hasta</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "justify-start text-left font-normal",
+                      !dateTo && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateTo ? format(dateTo, "dd/MM/yyyy") : <span>Seleccionar fecha</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dateTo}
+                    onSelect={setDateTo}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* User Filter */}
+            <div className="space-y-2">
+              <Label>Usuario</Label>
+              <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos los usuarios" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los usuarios</SelectItem>
+                  {profiles.map((profile) => (
+                    <SelectItem key={profile.user_id} value={profile.user_id}>
+                      {profile.full_name} ({profile.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Clear Filters */}
+            <div className="space-y-2">
+              <Label className="invisible">Acciones</Label>
+              <Button 
+                variant="outline" 
+                onClick={clearFilters}
+                disabled={!hasActiveFilters}
+                className="w-full"
+              >
+                <X className="mr-2 h-4 w-4" />
+                Limpiar filtros
+              </Button>
+            </div>
+          </div>
+          
+          {hasActiveFilters && (
+            <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                Mostrando {filteredEvaluations.length} de {evaluations.length} evaluaciones
+                {dateFrom && ` • Desde: ${format(dateFrom, "dd/MM/yyyy")}`}
+                {dateTo && ` • Hasta: ${format(dateTo, "dd/MM/yyyy")}`}
+                {selectedUserId !== 'all' && ` • Usuario: ${profiles.find(p => p.user_id === selectedUserId)?.full_name}`}
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Evaluations Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Todas las Evaluaciones</CardTitle>
+          <CardTitle>Evaluaciones</CardTitle>
           <CardDescription>
-            Histórico completo de evaluaciones de CV realizadas por el equipo
+            {hasActiveFilters ? 'Evaluaciones filtradas' : 'Histórico completo de evaluaciones de CV realizadas por el equipo'}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {evaluations.length === 0 ? (
+            {filteredEvaluations.length === 0 ? (
               <div className="text-center py-8">
                 <FileText className="h-12 w-12 mx-auto text-muted-foreground" />
-                <p className="mt-4 text-muted-foreground">No hay evaluaciones disponibles</p>
+                <p className="mt-4 text-muted-foreground">
+                  {hasActiveFilters ? 'No hay evaluaciones que coincidan con los filtros' : 'No hay evaluaciones disponibles'}
+                </p>
+                {hasActiveFilters && (
+                  <Button variant="outline" onClick={clearFilters} className="mt-2">
+                    Limpiar filtros
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -280,7 +471,7 @@ export const SuperAdminDashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {evaluations.map((evaluation) => (
+                    {filteredEvaluations.map((evaluation) => (
                       <tr key={evaluation.id} className="border-b hover:bg-muted/50">
                         <td className="p-4">
                           <div>
