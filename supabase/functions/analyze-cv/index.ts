@@ -41,12 +41,12 @@ serve(async (req) => {
 
     const prompt = `Analiza este CV y evalúalo según estos 7 criterios específicos para La Pieza:
 
-1. ESTABILIDAD LABORAL: Si ha estado menos de 1 año en 2 de sus últimos 4 trabajos = RED FLAG
+1. ESTABILIDAD LABORAL: Si ha estado menos de 1 año en 2 de sus últimos 5 trabajos = RED FLAG
 2. SENIORITY: Si tiene menos de 3 años de experiencia total = RED FLAG  
 3. EDUCACIÓN: Si no tiene carrera universitaria terminada (Lic./Ing./Bachelor's) = RED FLAG
 4. INGLÉS: Si no habla mínimo B2/intermedio-avanzado = RED FLAG (si el CV está en inglés, considerar OK)
 5. CERTIFICACIONES: Debe tener al menos 1 certificación/curso relevante para su posición actual
-6. EVOLUCIÓN PROFESIONAL: Debe haber tenido mínimo 1 ascenso en los últimos 6 años (excepto si ya es C-level/Director/VP)
+6. EVOLUCIÓN PROFESIONAL: Debe haber mostrado progreso profesional en los últimos 6 años, como ascensos dentro de la misma empresa O mejora de posición/seniority entre empresas (ej: de "Senior Analyst" a "Lead" o "Manager", de "Coordinator" a "Specialist" o "Senior", etc.). Excepto si ya es C-level/Director/VP desde hace más de 6 años.
 7. EXPERIENCIA EMPRESARIAL: Debe haber trabajado en empresa internacional/Fortune 500/Big Four/Startup tech (no solo PYMES tradicionales)
 8. ORTOGRAFÍA: Más de 3 errores ortográficos = RED FLAG
 
