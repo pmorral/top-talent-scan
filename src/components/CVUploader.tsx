@@ -31,14 +31,13 @@ interface CVAnalysis {
 
 export const CVUploader = () => {
   const [file, setFile] = useState<File | null>(null);
-  const [jobDescriptionFile, setJobDescriptionFile] = useState<File | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [isJobDescDragOver, setIsJobDescDragOver] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<CVAnalysis | null>(null);
   const [progress, setProgress] = useState(0);
   const [roleInfo, setRoleInfo] = useState('');
   const [companyInfo, setCompanyInfo] = useState('');
+  const [jobDescription, setJobDescription] = useState('');
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -83,47 +82,6 @@ export const CVUploader = () => {
     }
   };
 
-  // Job Description drag and drop handlers
-  const onJobDescDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsJobDescDragOver(true);
-  }, []);
-
-  const onJobDescDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsJobDescDragOver(false);
-  }, []);
-
-  const onJobDescDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsJobDescDragOver(false);
-    
-    const files = Array.from(e.dataTransfer.files);
-    const pdfFile = files.find(file => file.type === 'application/pdf');
-    
-    if (pdfFile) {
-      setJobDescriptionFile(pdfFile);
-    } else {
-      toast({
-        title: "Formato inválido",
-        description: "Por favor, sube un archivo PDF para la descripción del trabajo.",
-        variant: "destructive",
-      });
-    }
-  }, [toast]);
-
-  const handleJobDescFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile && selectedFile.type === 'application/pdf') {
-      setJobDescriptionFile(selectedFile);
-    } else {
-      toast({
-        title: "Formato inválido",
-        description: "Por favor, sube un archivo PDF para la descripción del trabajo.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const extractTextFromPDF = async (fileName: string): Promise<string> => {
     console.log('=== INICIANDO EXTRACCIÓN DE PDF CON EDGE FUNCTION ===');
@@ -268,53 +226,8 @@ export const CVUploader = () => {
       const cvText = await extractTextFromPDF(fileName);
       setProgress(60);
       
-      // Extract job description text if file is provided
-      let jobDescriptionText = '';
-      if (jobDescriptionFile) {
-        console.log('🔄 Extrayendo texto de descripción del trabajo...');
-        toast({
-          title: "Procesando descripción del trabajo...",
-          description: "Extrayendo texto del documento",
-        });
-        
-        // Upload job description file
-        const jobDescSanitizedName = jobDescriptionFile.name
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .replace(/[^a-zA-Z0-9.-]/g, '_')
-          .replace(/_{2,}/g, '_')
-          .replace(/^_|_$/g, '')
-          .replace(/\.+/g, '.')
-          .replace(/^\./, '')
-          .replace(/\.$/, '')
-          .toLowerCase();
-
-        const jobDescFileName = `${user.id}/job-desc-${Date.now()}-${jobDescSanitizedName}`;
-        
-        const { error: jobDescUploadError } = await supabase.storage
-          .from('cv-files')
-          .upload(jobDescFileName, jobDescriptionFile);
-
-        if (jobDescUploadError) {
-          console.warn('Error uploading job description file:', jobDescUploadError);
-          toast({
-            title: "Advertencia",
-            description: "No se pudo subir la descripción del trabajo, continuando sin ella.",
-            variant: "destructive",
-          });
-        } else {
-          try {
-            jobDescriptionText = await extractTextFromPDF(jobDescFileName);
-            console.log('✅ Job description text extracted:', jobDescriptionText.substring(0, 200) + '...');
-          } catch (jobDescError) {
-            console.warn('Error extracting job description text:', jobDescError);
-            toast({
-              title: "Advertencia", 
-              description: "No se pudo extraer el texto de la descripción del trabajo, continuando sin ella.",
-            });
-          }
-        }
-      }
+      // Extract job description text if provided
+      let jobDescriptionText = jobDescription.trim() || null;
       
       console.log('✅ Extracción completada, iniciando análisis...');
       toast({
@@ -339,9 +252,7 @@ export const CVUploader = () => {
           analysis_status: 'pending',
           role_info: roleInfo.trim(),
           company_info: companyInfo.trim(),
-          job_description_file_name: jobDescriptionFile?.name || null,
-          job_description_file_path: jobDescriptionFile ? `${user.id}/job-desc-${Date.now()}-${jobDescriptionFile.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9.-]/g, '_').toLowerCase()}` : null,
-          job_description_text: jobDescriptionText || null
+          job_description_text: jobDescriptionText
         })
         .select()
         .single();
@@ -501,63 +412,20 @@ export const CVUploader = () => {
             </div>
           </div>
 
-          {/* Job Description Upload (Optional) */}
+          {/* Job Description (Optional) */}
           <div className="space-y-2">
-            <Label htmlFor="job-desc-upload">Descripción del Trabajo (Opcional)</Label>
-            <p className="text-sm text-muted-foreground mb-3">
-              Sube el documento completo de la descripción del trabajo para una evaluación más precisa del fit con el rol.
+            <Label htmlFor="job-description">Descripción del Trabajo (Opcional)</Label>
+            <p className="text-sm text-muted-foreground">
+              Pega aquí la descripción completa del trabajo para una evaluación más precisa del fit con el rol.
             </p>
-            <div
-              className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                isJobDescDragOver
-                  ? 'border-corporate bg-corporate/5'
-                  : 'border-border hover:border-corporate/50'
-              }`}
-              onDragOver={onJobDescDragOver}
-              onDragLeave={onJobDescDragLeave}
-              onDrop={onJobDescDrop}
-            >
-              {jobDescriptionFile ? (
-                <div className="space-y-3">
-                  <FileText className="h-8 w-8 mx-auto text-corporate" />
-                  <div>
-                    <p className="font-medium text-sm">{jobDescriptionFile.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {(jobDescriptionFile.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setJobDescriptionFile(null)}
-                    disabled={isAnalyzing}
-                  >
-                    Remover
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                  <div>
-                    <p className="font-medium text-sm">Arrastra la descripción del trabajo aquí</p>
-                    <p className="text-xs text-muted-foreground">o haz clic para seleccionar (PDF)</p>
-                  </div>
-                  <input
-                    type="file"
-                    accept=".pdf"
-                    onChange={handleJobDescFileSelect}
-                    className="hidden"
-                    id="job-desc-upload"
-                    disabled={isAnalyzing}
-                  />
-                  <label htmlFor="job-desc-upload">
-                    <Button variant="outline" size="sm" className="cursor-pointer" asChild disabled={isAnalyzing}>
-                      <span>Seleccionar PDF</span>
-                    </Button>
-                  </label>
-                </div>
-              )}
-            </div>
+            <Textarea
+              id="job-description"
+              placeholder="Pega aquí la descripción completa del trabajo, incluyendo responsabilidades, requisitos, habilidades requeridas, etc..."
+              value={jobDescription}
+              onChange={(e) => setJobDescription(e.target.value)}
+              className="min-h-32"
+              disabled={isAnalyzing}
+            />
           </div>
 
           {/* Upload Area */}
