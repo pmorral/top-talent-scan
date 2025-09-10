@@ -203,15 +203,14 @@ export const CVUploader = () => {
       setIsAnalyzing(true);
       setProgress(10);
       
-      // Sanitize filename: remove special characters, spaces, and ensure single extension
+      // Sanitize filename: only remove characters that cause Supabase Storage issues
+      // Keep accents and letters for proper spelling analysis
       const sanitizedName = file.name
-        .normalize('NFD')                    // Normalize unicode characters
-        .replace(/[\u0300-\u036f]/g, '')     // Remove accents
-        .replace(/[^a-zA-Z0-9.-]/g, '_')     // Replace invalid chars with underscore
+        .replace(/\s+/g, '_')                // Replace spaces with underscores
+        .replace(/[<>:"/\\|?*]/g, '_')       // Replace filesystem invalid characters
         .replace(/\.+/g, '.')                // Replace multiple dots with single dot
         .replace(/^\./, '')                  // Remove leading dot
         .replace(/\.$/, '')                  // Remove trailing dot
-        .toLowerCase();
 
       // Create unique filename with timestamp
       const fileName = `${user.id}/${Date.now()}-${sanitizedName}`;
