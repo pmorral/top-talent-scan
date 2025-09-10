@@ -19,10 +19,14 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { evaluationId, cvText } = await req.json();
+    const { evaluationId, cvText, roleInfo, companyInfo } = await req.json();
     
     if (!evaluationId || !cvText) {
       throw new Error('Missing evaluationId or cvText');
+    }
+
+    if (!roleInfo || !companyInfo) {
+      throw new Error('Missing roleInfo or companyInfo');
     }
 
     console.log('Starting CV analysis for evaluation:', evaluationId);
@@ -39,7 +43,7 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    const prompt = `Analiza este CV y evalúalo según estos 7 criterios específicos para La Pieza:
+    const prompt = `Analiza este CV y evalúalo según estos 10 criterios específicos para La Pieza:
 
 1. ESTABILIDAD LABORAL: Si ha estado menos de 1 año en 2 de sus últimos 5 trabajos = RED FLAG
 2. SENIORITY: Si tiene menos de 3 años de experiencia total = RED FLAG  
@@ -49,6 +53,12 @@ serve(async (req) => {
 6. EVOLUCIÓN PROFESIONAL: Debe haber mostrado progreso profesional en los últimos 6 años, como ascensos dentro de la misma empresa O mejora de posición/seniority entre empresas (ej: de "Senior Analyst" a "Lead" o "Manager", de "Coordinator" a "Specialist" o "Senior", etc.). Excepto si ya es C-level/Director/VP desde hace más de 6 años.
 7. EXPERIENCIA EMPRESARIAL: Debe haber trabajado en empresa internacional/Fortune 500/Big Four/Startup tech (no solo PYMES tradicionales)
 8. ORTOGRAFÍA: Más de 3 errores ortográficos = RED FLAG
+9. FIT CON EL ROL: Evalúa si la experiencia del candidato encaja con el rol que está aplicando. Considera si es la misma área, si tiene sentido con su progresión profesional, y si no menciona buscar algo completamente diferente en su CV.
+10. FIT CON LA EMPRESA: Evalúa si la experiencia del candidato encaja con la empresa/industria. Considera si ha trabajado en industrias similares o si la transición tiene sentido.
+
+INFORMACIÓN DEL ROL: ${roleInfo}
+
+INFORMACIÓN DE LA EMPRESA: ${companyInfo}
 
 CV A ANALIZAR:
 ${cvText}
@@ -65,7 +75,9 @@ Responde EXACTAMENTE en este formato JSON:
     "certifications": {"passed": [true/false], "message": "[explicación específica]"},
     "careerGrowth": {"passed": [true/false], "message": "[explicación específica]"},
     "companyExperience": {"passed": [true/false], "message": "[explicación específica]"},
-    "spelling": {"passed": [true/false], "message": "[explicación específica]"}
+    "spelling": {"passed": [true/false], "message": "[explicación específica]"},
+    "roleFit": {"passed": [true/false], "message": "[explicación específica considerando el rol: ${roleInfo}]"},
+    "companyFit": {"passed": [true/false], "message": "[explicación específica considerando la empresa: ${companyInfo}]"}
   }
 }`;
 

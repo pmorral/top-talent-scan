@@ -3,6 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Upload, FileText, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,6 +24,8 @@ interface CVAnalysis {
     careerGrowth: { passed: boolean; message: string };
     companyExperience: { passed: boolean; message: string };
     spelling: { passed: boolean; message: string };
+    roleFit: { passed: boolean; message: string };
+    companyFit: { passed: boolean; message: string };
   };
 }
 
@@ -30,6 +35,8 @@ export const CVUploader = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<CVAnalysis | null>(null);
   const [progress, setProgress] = useState(0);
+  const [roleInfo, setRoleInfo] = useState('');
+  const [companyInfo, setCompanyInfo] = useState('');
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -156,6 +163,24 @@ export const CVUploader = () => {
   const analyzeCV = async () => {
     if (!file || !user) return;
     
+    if (!roleInfo.trim()) {
+      toast({
+        title: "Información faltante",
+        description: "Por favor, describe el rol al que está aplicando.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!companyInfo.trim()) {
+      toast({
+        title: "Información faltante", 
+        description: "Por favor, describe la empresa/industria.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       setIsAnalyzing(true);
       setProgress(10);
@@ -235,7 +260,9 @@ export const CVUploader = () => {
         .invoke('analyze-cv', {
           body: {
             evaluationId: evaluation.id,
-            cvText: cvText
+            cvText: cvText,
+            roleInfo: roleInfo.trim(),
+            companyInfo: companyInfo.trim()
           }
         });
 
@@ -267,7 +294,9 @@ export const CVUploader = () => {
           certifications: { passed: false, message: 'Sin análisis' },
           careerGrowth: { passed: false, message: 'Sin análisis' },
           companyExperience: { passed: false, message: 'Sin análisis' },
-          spelling: { passed: false, message: 'Sin análisis' }
+          spelling: { passed: false, message: 'Sin análisis' },
+          roleFit: { passed: false, message: 'Sin análisis' },
+          companyFit: { passed: false, message: 'Sin análisis' }
         };
 
         const analysisResult: CVAnalysis = {
@@ -340,7 +369,34 @@ export const CVUploader = () => {
             Sube tu CV en formato PDF para obtener una evaluación automática basada en nuestros criterios de selección.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
+          {/* Role and Company Information */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="role-info">Rol al que está aplicando *</Label>
+              <Textarea
+                id="role-info"
+                placeholder="Ej: Senior Marketing Manager, área de growth marketing, requiere 5+ años de experiencia en marketing digital..."
+                value={roleInfo}
+                onChange={(e) => setRoleInfo(e.target.value)}
+                className="min-h-20"
+                disabled={isAnalyzing}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="company-info">Empresa/Industria *</Label>
+              <Textarea
+                id="company-info"
+                placeholder="Ej: Fintech startup B2B, empresa de tecnología financiera con 200 empleados, mercado latinoamericano..."
+                value={companyInfo}
+                onChange={(e) => setCompanyInfo(e.target.value)}
+                className="min-h-20"
+                disabled={isAnalyzing}
+              />
+            </div>
+          </div>
+
+          {/* Upload Area */}
           <div
             className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
               isDragOver
@@ -360,7 +416,7 @@ export const CVUploader = () => {
                     {(file.size / 1024 / 1024).toFixed(2)} MB
                   </p>
                 </div>
-                <Button onClick={analyzeCV} disabled={isAnalyzing} className="w-full">
+                <Button onClick={analyzeCV} disabled={isAnalyzing || !roleInfo.trim() || !companyInfo.trim()} className="w-full">
                   {isAnalyzing ? 'Analizando...' : 'Analizar CV'}
                 </Button>
               </div>
@@ -461,6 +517,8 @@ export const CVUploader = () => {
                           {key === 'careerGrowth' && 'Evolución Profesional'}
                           {key === 'companyExperience' && 'Experiencia Empresarial'}
                           {key === 'spelling' && 'Ortografía'}
+                          {key === 'roleFit' && 'Fit con el Rol'}
+                          {key === 'companyFit' && 'Fit con la Empresa'}
                         </h4>
                         <Badge variant={criterion.passed ? "default" : "destructive"}>
                           {criterion.passed ? 'Aprobado' : 'Red Flag'}
