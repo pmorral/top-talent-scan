@@ -79,55 +79,120 @@ export const CVUploader = () => {
     console.log('Archivo:', fileName);
     
     try {
-      // Get signed URL for the uploaded file
+      // Get signed URL for the uploaded file with shorter expiry for security
       const { data: signedUrlData, error: urlError } = await supabase.storage
         .from('cv-files')
-        .createSignedUrl(fileName, 3600); // 1 hour expiry
+        .createSignedUrl(fileName, 1800); // 30 minutes expiry
 
-      if (urlError || !signedUrlData?.signedUrl) {
-        throw new Error(`Error getting signed URL: ${urlError?.message || 'No signed URL returned'}`);
+      if (urlError) {
+        console.error('❌ Error creating signed URL:', urlError);
+        throw new Error(`Error generando URL segura: ${urlError.message}`);
+      }
+
+      if (!signedUrlData?.signedUrl) {
+        throw new Error('No se pudo generar la URL segura para el archivo');
       }
 
       console.log('✅ Signed URL obtenida:', signedUrlData.signedUrl);
 
-      // Call tech team's API for PDF extraction
-      const response = await axios.post(
-        "https://interview-api-dev.lapieza.io/api/v1/analize/cv",
-        {
-          cv_url: signedUrlData.signedUrl,
-          mode: "text",
-          need_personal_data: true,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
+      // Call tech team's API for PDF extraction with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+      try {
+        const response = await axios.post(
+          "https://interview-api-dev.lapieza.io/api/v1/analize/cv",
+          {
+            cv_url: signedUrlData.signedUrl,
+            mode: "text",
+            need_personal_data: true,
           },
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+            timeout: 30000,
+            signal: controller.signal,
+          }
+        );
+
+        clearTimeout(timeoutId);
+        console.log('✅ Respuesta de API recibida:', response.status, response.statusText);
+        console.log('📄 Estructura de respuesta:', Object.keys(response.data || {}));
+
+        // Validate response structure
+        if (!response.data) {
+          throw new Error('La API devolvió una respuesta vacía');
         }
-      );
 
-      console.log('✅ Respuesta de API recibida:', response.data);
+        // Handle different possible response formats
+        let extractedText = '';
+        if (response.data.text) {
+          extractedText = response.data.text;
+        } else if (response.data.content) {
+          extractedText = response.data.content;
+        } else if (response.data.data && response.data.data.text) {
+          extractedText = response.data.data.text;
+        } else if (typeof response.data === 'string') {
+          extractedText = response.data;
+        } else {
+          console.error('❌ Formato de respuesta inesperado:', response.data);
+          throw new Error('La API devolvió un formato de respuesta inesperado');
+        }
 
-      if (!response.data || !response.data.text) {
-        throw new Error('La API no devolvió texto extraído del PDF');
+        if (!extractedText || typeof extractedText !== 'string') {
+          throw new Error('No se pudo extraer texto del PDF. El archivo podría estar corrupto o ser una imagen escaneada.');
+        }
+
+        const cleanText = extractedText.trim();
+        
+        if (cleanText.length < 50) {
+          throw new Error('El PDF contiene muy poco texto. Asegúrate de que sea un CV con texto seleccionable, no una imagen escaneada.');
+        }
+
+        console.log('✅ Texto extraído exitosamente:', cleanText.length, 'caracteres');
+        console.log('📝 Muestra del contenido:', cleanText.substring(0, 200) + '...');
+        
+        return cleanText;
+
+      } catch (axiosError: any) {
+        clearTimeout(timeoutId);
+        
+        if (axiosError.code === 'ECONNABORTED' || axiosError.name === 'AbortError') {
+          throw new Error('La extracción del PDF tardó demasiado. Inténtalo con un archivo más pequeño.');
+        }
+        
+        if (axiosError.response) {
+          console.error('❌ Error de respuesta de API:', axiosError.response.status, axiosError.response.data);
+          throw new Error(`Error del servidor de extracción (${axiosError.response.status}): ${axiosError.response.data?.message || 'Error desconocido'}`);
+        }
+        
+        if (axiosError.request) {
+          console.error('❌ Error de red:', axiosError.message);
+          throw new Error('No se pudo conectar con el servidor de extracción. Verifica tu conexión a internet.');
+        }
+        
+        throw axiosError;
       }
-
-      const extractedText = response.data.text.trim();
-      
-      if (extractedText.length < 100) {
-        throw new Error('El PDF no contiene suficiente texto legible para el análisis');
-      }
-
-      console.log('✅ Texto extraído exitosamente:', extractedText.length, 'caracteres');
-      console.log('Muestra:', extractedText.substring(0, 200) + '...');
-      
-      return extractedText;
       
     } catch (error) {
-      console.error('❌ Error extrayendo texto:', error);
+      console.error('❌ Error general en extracción:', error);
+      
       if (error instanceof Error) {
-        throw new Error(`Error extrayendo texto del PDF: ${error.message}`);
+        // Re-throw our custom errors as-is
+        if (error.message.includes('Error generando URL') || 
+            error.message.includes('formato de respuesta') ||
+            error.message.includes('muy poco texto') ||
+            error.message.includes('tardó demasiado') ||
+            error.message.includes('Error del servidor') ||
+            error.message.includes('No se pudo conectar')) {
+          throw error;
+        }
+        
+        throw new Error(`Error procesando el PDF: ${error.message}`);
       }
-      throw new Error('Error desconocido al extraer texto del PDF');
+      
+      throw new Error('Error desconocido al procesar el PDF. Inténtalo de nuevo.');
     }
   };
 
@@ -151,8 +216,20 @@ export const CVUploader = () => {
       setProgress(30);
 
       // Extract text from PDF using tech team's API
+      console.log('🔄 Iniciando extracción de texto...');
+      toast({
+        title: "Extrayendo texto del PDF...",
+        description: "Procesando el contenido de tu CV",
+      });
+      
       const cvText = await extractTextFromPDF(fileName);
       setProgress(50);
+      
+      console.log('✅ Extracción completada, iniciando análisis...');
+      toast({
+        title: "Texto extraído exitosamente",
+        description: "Iniciando análisis inteligente del CV",
+      });
 
       if (!cvText || cvText.trim().length < 100) {
         throw new Error('Necesitamos más contenido de tu CV para hacer un análisis completo. Asegúrate de pegar todo el texto de tu CV.');
