@@ -31,6 +31,10 @@ export const AuthGate = () => {
       return;
     }
 
+    // Log email redirect for debugging
+    const redirectTo = `${window.location.origin}/`;
+    console.log('Email redirect configured to:', redirectTo);
+
     const { error } = isSignUp 
       ? await signUp(email, password)
       : await signIn(email, password);
@@ -72,8 +76,11 @@ export const AuthGate = () => {
     }
 
     try {
+      const redirectTo = `${window.location.origin}/`;
+      console.log('Password reset redirect configured to:', redirectTo);
+      
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/`,
+        redirectTo: redirectTo,
       });
 
       if (error) {
@@ -111,9 +118,36 @@ export const AuthGate = () => {
     );
   }
 
+  // Check if user is on correct domain
+  const currentDomain = window.location.origin;
+  const isCorrectDomain = currentDomain.includes('cv-test.lapieza.ai') || 
+                         currentDomain.includes('sandbox.lovable.dev') ||
+                         currentDomain.includes('localhost');
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-corporate/5 p-4">
       <div className="w-full max-w-md space-y-6">
+        
+        {/* Domain Warning */}
+        {!isCorrectDomain && (
+          <Card className="border-destructive/20 bg-destructive/5">
+            <CardContent className="pt-4">
+              <div className="text-center space-y-2">
+                <h3 className="font-semibold text-destructive">⚠️ Dominio Incorrecto</h3>
+                <p className="text-sm text-muted-foreground">
+                  Para acceder al CV Evaluator, usa: <strong>https://cv-test.lapieza.ai</strong>
+                </p>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => window.open('https://cv-test.lapieza.ai', '_blank')}
+                >
+                  Abrir App Correcta
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
         {/* Logo/Header */}
         <div className="text-center space-y-2">
           <div className="mx-auto w-16 h-16 bg-corporate rounded-full flex items-center justify-center">

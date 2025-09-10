@@ -79,8 +79,10 @@ export const EmailConfirmation = ({ email, onBack }: EmailConfirmationProps) => 
               <div className="space-y-3 text-sm text-muted-foreground">
                 <p>📧 <strong>Revisa tu bandeja de entrada</strong> y busca un email de Supabase</p>
                 <p>📂 <strong>Verifica tu carpeta de spam</strong> si no lo encuentras</p>
-                <p>🔗 <strong>Haz clic en el enlace</strong> del email para confirmar tu cuenta</p>
-                <p>↩️ <strong>Regresa aquí</strong> después de confirmar para iniciar sesión</p>
+                <p>🔗 <strong>Haz clic en el enlace UNA SOLA VEZ</strong> del email para confirmar tu cuenta</p>
+                <p>⚠️ <strong>Importante:</strong> El enlace es de un solo uso y expira en 24 horas</p>
+                <p>🌐 <strong>Usa el mismo navegador</strong> donde abriste este registro</p>
+                <p>↩️ <strong>Después de confirmar, regresa aquí</strong> para iniciar sesión manualmente</p>
               </div>
             </div>
 
@@ -124,6 +126,8 @@ export const EmailConfirmation = ({ email, onBack }: EmailConfirmationProps) => 
               <div className="text-sm text-muted-foreground space-y-1">
                 <p>• Los emails pueden tardar hasta 10 minutos en llegar</p>
                 <p>• Verifica que tu email sea de @lapieza.io</p>
+                <p>• <strong>Si ves "enlace inválido":</strong> El enlace ya fue usado o expiró</p>
+                <p>• <strong>Solución:</strong> Usa el botón "Reenviar email" arriba</p>
                 <p>• Contacta al administrador del sistema si persiste el problema</p>
               </div>
             </div>
