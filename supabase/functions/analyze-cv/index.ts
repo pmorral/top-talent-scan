@@ -43,7 +43,7 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    const prompt = `Analiza este CV y evalúalo según estos 10 criterios específicos para La Pieza:
+    const prompt = `Analiza este CV y evalúalo según estos 10 criterios específicos para LaPieza:
 
 1. ESTABILIDAD LABORAL: Si ha estado menos de 1 año en 2 de sus últimos 5 trabajos = RED FLAG
 2. SENIORITY: Si tiene menos de 3 años de experiencia total = RED FLAG  
@@ -92,7 +92,7 @@ Responde EXACTAMENTE en este formato JSON:
         messages: [
           { 
             role: 'system', 
-            content: 'Eres un experto en recursos humanos de La Pieza analizando CVs. Responde solo en el formato JSON solicitado, sin texto adicional.' 
+            content: 'Eres un experto en recursos humanos de LaPieza analizando CVs. Responde solo en el formato JSON solicitado, sin texto adicional.' 
           },
           { role: 'user', content: prompt }
         ],

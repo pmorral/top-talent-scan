@@ -120,7 +120,7 @@ export const AuthGate = () => {
             <Building className="h-8 w-8 text-corporate-foreground" />
           </div>
           <h1 className="text-2xl font-bold">CV Evaluator</h1>
-          <p className="text-muted-foreground">Herramienta interna de La Pieza</p>
+          <p className="text-muted-foreground">Herramienta interna de LaPieza</p>
         </div>
 
         {/* Auth Form */}

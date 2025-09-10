@@ -33,7 +33,7 @@ const Index = () => {
               </div>
               <div>
                 <h1 className="text-xl font-bold">CV Evaluator</h1>
-                <p className="text-sm text-muted-foreground">La Pieza - Herramienta Interna</p>
+                <p className="text-sm text-muted-foreground">LaPieza - Herramienta Interna</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
@@ -79,7 +79,7 @@ const Index = () => {
       <footer className="border-t bg-muted/30 mt-16">
         <div className="container mx-auto px-4 py-6">
           <div className="text-center text-sm text-muted-foreground">
-            <p>© 2024 La Pieza - Herramienta interna para evaluación de CVs</p>
+            <p>© 2025 LaPieza - Herramienta interna para evaluación de CVs</p>
             <p className="mt-1">Solo para uso interno de empleados autorizados</p>
           </div>
         </div>

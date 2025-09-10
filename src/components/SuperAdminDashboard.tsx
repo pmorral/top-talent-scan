@@ -153,7 +153,7 @@ export const SuperAdminDashboard = () => {
         <div>
           <h1 className="text-3xl font-bold">Dashboard SuperAdmin</h1>
           <p className="text-muted-foreground">
-            Evaluaciones de CV de todos los usuarios de La Pieza
+            Evaluaciones de CV de todos los usuarios de LaPieza
           </p>
         </div>
         <Button onClick={fetchDashboardData} variant="outline">
