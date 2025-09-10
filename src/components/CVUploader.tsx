@@ -7,6 +7,7 @@ import { Upload, FileText, CheckCircle, XCircle, AlertTriangle } from 'lucide-re
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthProvider';
+import axios from 'axios';
 
 interface CVAnalysis {
   score: number;
@@ -73,41 +74,60 @@ export const CVUploader = () => {
     }
   };
 
-  const extractTextFromPDF = async (file: File): Promise<string> => {
-    console.log('=== INICIANDO EXTRACCIÓN DE PDF ===');
-    console.log('Archivo:', file.name, 'Tamaño:', file.size, 'Tipo:', file.type);
+  const extractTextFromPDF = async (fileName: string): Promise<string> => {
+    console.log('=== INICIANDO EXTRACCIÓN DE PDF CON API ===');
+    console.log('Archivo:', fileName);
     
     try {
-      // SOLUCIÓN TEMPORAL: Pedir al usuario que copie y pegue el texto
-      // Esta es la forma más confiable mientras solucionamos la extracción automática
-      
-      const userText = prompt(`
-🔍 EXTRACCIÓN DE TEXTO DEL CV
+      // Get signed URL for the uploaded file
+      const { data: signedUrlData, error: urlError } = await supabase.storage
+        .from('cv-files')
+        .createSignedUrl(fileName, 3600); // 1 hour expiry
 
-Para garantizar un análisis preciso, por favor:
-
-1. Abre tu PDF en otra pestaña
-2. Selecciona TODO el texto (Ctrl+A / Cmd+A) 
-3. Cópialo (Ctrl+C / Cmd+C)
-4. Pégalo en el campo de abajo
-
-Esto nos ayuda a asegurar que el análisis sea 100% preciso con tu CV real.
-
-PEGA AQUÍ EL TEXTO DE TU CV:`);
-
-      if (!userText || userText.trim().length < 100) {
-        throw new Error('Necesitamos el texto de tu CV para hacer el análisis. Por favor, copia y pega el contenido completo de tu CV.');
+      if (urlError || !signedUrlData?.signedUrl) {
+        throw new Error(`Error getting signed URL: ${urlError?.message || 'No signed URL returned'}`);
       }
 
-      const cleanText = userText.trim();
-      console.log('✅ Texto recibido del usuario:', cleanText.length, 'caracteres');
-      console.log('Muestra:', cleanText.substring(0, 200) + '...');
+      console.log('✅ Signed URL obtenida:', signedUrlData.signedUrl);
+
+      // Call tech team's API for PDF extraction
+      const response = await axios.post(
+        "https://interview-api-dev.lapieza.io/api/v1/analize/cv",
+        {
+          cv_url: signedUrlData.signedUrl,
+          mode: "text",
+          need_personal_data: true,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log('✅ Respuesta de API recibida:', response.data);
+
+      if (!response.data || !response.data.text) {
+        throw new Error('La API no devolvió texto extraído del PDF');
+      }
+
+      const extractedText = response.data.text.trim();
       
-      return cleanText;
+      if (extractedText.length < 100) {
+        throw new Error('El PDF no contiene suficiente texto legible para el análisis');
+      }
+
+      console.log('✅ Texto extraído exitosamente:', extractedText.length, 'caracteres');
+      console.log('Muestra:', extractedText.substring(0, 200) + '...');
+      
+      return extractedText;
       
     } catch (error) {
-      console.error('❌ Error:', error);
-      throw error;
+      console.error('❌ Error extrayendo texto:', error);
+      if (error instanceof Error) {
+        throw new Error(`Error extrayendo texto del PDF: ${error.message}`);
+      }
+      throw new Error('Error desconocido al extraer texto del PDF');
     }
   };
 
@@ -130,8 +150,8 @@ PEGA AQUÍ EL TEXTO DE TU CV:`);
 
       setProgress(30);
 
-      // Extract text from PDF (user input method)
-      const cvText = await extractTextFromPDF(file);
+      // Extract text from PDF using tech team's API
+      const cvText = await extractTextFromPDF(fileName);
       setProgress(50);
 
       if (!cvText || cvText.trim().length < 100) {
