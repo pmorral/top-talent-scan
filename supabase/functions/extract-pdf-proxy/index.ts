@@ -22,7 +22,7 @@ serve(async (req) => {
     }
 
     console.log('📄 URL del PDF:', cv_url);
-    console.log('⚙️ Configuración FORZADA para texto RAW:', { mode: "raw_text", need_personal_data: false });
+    console.log('⚙️ Configuración para máximo texto:', { mode: "text", need_personal_data: false });
 
     // Call the tech team's API
     const response = await fetch(
@@ -34,8 +34,8 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           cv_url,
-          mode: "raw_text", // Cambio crítico: solicitar texto RAW completo del PDF
-          need_personal_data: false, // No necesitamos data personal procesada, solo texto bruto
+          mode: "text", // Solo acepta "text" o "file"
+          need_personal_data: false, // Cambiado a false para evitar procesamiento adicional
         }),
       }
     );
