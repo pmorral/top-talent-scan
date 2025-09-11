@@ -69,9 +69,9 @@ RED FLAG si: No tiene carrera universitaria terminada, solo tiene carrera técni
 PASA si: Menciona nivel B2+ o intermedio-avanzado, o el CV está escrito en inglés, o trabajó en empresa internacional
 RED FLAG si: No menciona inglés, indica nivel básico/A1/A2, o no hay evidencia de manejo del idioma
 
-5. CERTIFICACIONES
-PASA si: Tiene al menos 1 certificación o curso relevante para su área profesional
-RED FLAG si: No tiene certificaciones relevantes, o no menciona ninguna certificación
+5. CERTIFICACIONES Y FORMACIÓN
+PASA si: Tiene al menos 1 certificación, curso, o formación relevante para su área profesional o para el rol específico (incluye cursos online, bootcamps, especializaciones, workshops relevantes)
+RED FLAG si: No tiene certificaciones, cursos, o formación relevante, o no menciona ningún tipo de capacitación profesional
 
 6. EVOLUCIÓN PROFESIONAL
 PASA si: Muestra progreso profesional en los últimos 6 años (ascensos, aumento de responsabilidades, mejora de seniority), O ya es C-level/Director/VP desde hace más de 6 años
