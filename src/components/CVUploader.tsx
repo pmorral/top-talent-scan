@@ -85,40 +85,23 @@ export const CVUploader = () => {
   };
 
 
-  const extractTextFromPDF = async (fileName: string): Promise<string> => {
+  const extractTextFromPDF = async (uploadedFile: File): Promise<string> => {
     console.log('=== INICIANDO EXTRACCIÓN DE PDF CON EDGE FUNCTION ===');
-    console.log('Archivo:', fileName);
+    console.log('Archivo:', uploadedFile.name, 'tamaño:', uploadedFile.size);
     
     try {
-      // Get signed URL for the uploaded file with shorter expiry for security
-      const { data: signedUrlData, error: urlError } = await supabase.storage
-        .from('cv-files')
-        .createSignedUrl(fileName, 1800); // 30 minutes expiry
+      // Create FormData to send the file directly to extract-pdf-text
+      const formData = new FormData();
+      formData.append('file', uploadedFile);
 
-      if (urlError) {
-        console.error('❌ Error creating signed URL:', urlError);
-        throw new Error(`Error generando URL segura: ${urlError.message}`);
-      }
-
-      if (!signedUrlData?.signedUrl) {
-        throw new Error('No se pudo generar la URL segura para el archivo');
-      }
-
-      console.log('✅ Signed URL obtenida:', signedUrlData.signedUrl);
-
-      // Call our Edge Function proxy instead of calling the API directly
-      console.log('🔄 Llamando Edge Function proxy...');
-      const { data, error } = await supabase.functions.invoke('extract-pdf-proxy', {
-        body: {
-          cv_url: signedUrlData.signedUrl,
-          mode: "text",
-          need_personal_data: true,
-        },
+      console.log('🔄 Llamando extract-pdf-text directamente...');
+      const { data, error } = await supabase.functions.invoke('extract-pdf-text', {
+        body: formData,
       });
 
       if (error) {
         console.error('❌ Error en Edge Function:', error);
-        throw new Error(`Error en el proxy de extracción: ${error.message}`);
+        throw new Error(`Error en la extracción: ${error.message}`);
       }
 
       console.log('✅ Respuesta de Edge Function recibida:', data);
@@ -128,7 +111,7 @@ export const CVUploader = () => {
       }
 
       if (!data.text) {
-        throw new Error('La API no devolvió texto extraído del PDF');
+        throw new Error('La función no devolvió texto extraído del PDF');
       }
 
       const extractedText = data.text.trim();
@@ -225,7 +208,7 @@ export const CVUploader = () => {
         description: "Procesando el contenido de tu CV",
       });
       
-      const cvText = await extractTextFromPDF(fileName);
+      const cvText = await extractTextFromPDF(file);
       setProgress(60);
       
       // Use role info as job description text
