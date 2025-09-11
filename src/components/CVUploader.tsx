@@ -84,49 +84,38 @@ export const CVUploader = () => {
 
 
   const extractTextFromPDF = async (fileName: string): Promise<string> => {
-    console.log('=== INICIANDO EXTRACCIÓN DE PDF CON EDGE FUNCTION ===');
+    console.log('=== INICIANDO EXTRACCIÓN DE PDF CON FUNCIÓN LOCAL ===');
     console.log('Archivo:', fileName);
     
     try {
-      // Get signed URL for the uploaded file with shorter expiry for security
-      const { data: signedUrlData, error: urlError } = await supabase.storage
-        .from('cv-files')
-        .createSignedUrl(fileName, 1800); // 30 minutes expiry
-
-      if (urlError) {
-        console.error('❌ Error creating signed URL:', urlError);
-        throw new Error(`Error generando URL segura: ${urlError.message}`);
+      if (!file) {
+        throw new Error('No hay archivo disponible para extracción');
       }
 
-      if (!signedUrlData?.signedUrl) {
-        throw new Error('No se pudo generar la URL segura para el archivo');
-      }
+      console.log('🔄 Usando extracción local de PDF...');
+      
+      // Create FormData with the original file
+      const formData = new FormData();
+      formData.append('file', file);
 
-      console.log('✅ Signed URL obtenida:', signedUrlData.signedUrl);
-
-      // Call our Edge Function proxy instead of calling the API directly
-      console.log('🔄 Llamando Edge Function proxy...');
-      const { data, error } = await supabase.functions.invoke('extract-pdf-proxy', {
-        body: {
-          cv_url: signedUrlData.signedUrl,
-          mode: "text",
-          need_personal_data: true,
-        },
+      // Call our local Edge Function for direct text extraction
+      const { data, error } = await supabase.functions.invoke('extract-pdf-text', {
+        body: formData,
       });
 
       if (error) {
-        console.error('❌ Error en Edge Function:', error);
-        throw new Error(`Error en el proxy de extracción: ${error.message}`);
+        console.error('❌ Error en Edge Function local:', error);
+        throw new Error(`Error en extracción local: ${error.message}`);
       }
 
-      console.log('✅ Respuesta de Edge Function recibida:', data);
+      console.log('✅ Respuesta de extracción local:', data);
 
       if (!data.success) {
-        throw new Error(data.error || 'Error desconocido en la extracción');
+        throw new Error(data.error || 'Error desconocido en la extracción local');
       }
 
       if (!data.text) {
-        throw new Error('La API no devolvió texto extraído del PDF');
+        throw new Error('La extracción local no devolvió texto');
       }
 
       const extractedText = data.text.trim();
@@ -136,29 +125,26 @@ export const CVUploader = () => {
       }
 
       console.log('✅ Texto extraído exitosamente:', extractedText.length, 'caracteres');
-      console.log('📝 Muestra del contenido:', extractedText.substring(0, 200) + '...');
+      console.log('📝 Muestra del contenido (primeros 500 chars):', extractedText.substring(0, 500) + '...');
+      console.log('📝 Muestra del contenido (últimos 300 chars):', extractedText.substring(Math.max(0, extractedText.length - 300)));
       
       return extractedText;
       
     } catch (error) {
-      console.error('❌ Error general en extracción:', error);
+      console.error('❌ Error general en extracción local:', error);
       
       if (error instanceof Error) {
         // Re-throw our custom errors as-is
-        if (error.message.includes('Error generando URL') || 
-            error.message.includes('formato de respuesta') ||
-            error.message.includes('muy poco texto') ||
-            error.message.includes('tardó demasiado') ||
-            error.message.includes('Error del servidor') ||
-            error.message.includes('Error en el proxy') ||
-            error.message.includes('No se pudo conectar')) {
+        if (error.message.includes('muy poco texto') ||
+            error.message.includes('no una imagen escaneada') ||
+            error.message.includes('Error en extracción local')) {
           throw error;
         }
         
-        throw new Error(`Error procesando el PDF: ${error.message}`);
+        throw new Error(`Error procesando el PDF localmente: ${error.message}`);
       }
       
-      throw new Error('Error desconocido al procesar el PDF. Inténtalo de nuevo.');
+      throw new Error('Error desconocido al procesar el PDF localmente. Inténtalo de nuevo.');
     }
   };
 
