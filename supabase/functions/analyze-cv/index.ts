@@ -58,8 +58,8 @@ PASA si: Ha estado 1 año o más en la mayoría de sus últimos 5 trabajos
 RED FLAG si: Ha estado menos de 1 año en 2 o más de sus últimos 5 trabajos, o no hay suficiente información de fechas
 
 2. SENIORITY
-PASA si: Tiene 3 años o más de experiencia profesional total
-RED FLAG si: Tiene menos de 3 años de experiencia total, o no se puede determinar la experiencia total
+PASA si: La experiencia profesional total del candidato coincide con lo requerido en la descripción del trabajo. Si no se especifican años en el JD, usa estos estándares de mercado según el nivel del rol: Junior/Trainee: 0-2 años, Specialist/Analyst: 2-4 años, Senior: 4-7 años, Lead/Manager: 5-8 años, Head/Director: 8+ años, VP/C-level: 10+ años.
+RED FLAG si: La experiencia total es significativamente menor a lo requerido para el nivel del rol (diferencia de 2+ años), o no se puede determinar la experiencia total con claridad
 
 3. EDUCACIÓN
 PASA si: Tiene carrera universitaria terminada (Licenciatura/Ingeniería/Bachelor's/Master's/PhD)
