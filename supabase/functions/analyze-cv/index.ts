@@ -43,7 +43,7 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    const prompt = `Analiza este CV y evalúalo según estos 10 criterios específicos para LaPieza.
+    const prompt = `Analiza este CV y evalúalo según estos 13 criterios específicos para LaPieza.
 
 REGLAS GLOBALES:
 - Solo existen 2 resultados para cada criterio: "PASA" o "RED FLAG"
@@ -78,18 +78,30 @@ PASA si: Muestra progreso profesional en los últimos 6 años (ascensos, aumento
 RED FLAG si: No muestra progreso, se ha mantenido en el mismo nivel, o hay retroceso profesional
 
 7. EXPERIENCIA EMPRESARIAL
-PASA si: Ha trabajado en empresa internacional, Fortune 500, Big Four, startup tech, o corporativo grande
-RED FLAG si: Solo ha trabajado en PYMES tradicionales locales, o no se puede determinar el tipo de empresa
+PASA si: Ha trabajado en empresa internacional, Fortune 500, Big Four, startup tech, corporativo grande, con metodologías modernas (Agile, DevOps, etc.)
+RED FLAG si: Solo ha trabajado en PYMES tradicionales locales sin evidencia de procesos modernos, o no se puede determinar el tipo/tamaño de empresa
 
 8. ORTOGRAFÍA Y GRAMÁTICA
 PASA si: El CV tiene máximo 1 error ortográfico/gramatical menor
 RED FLAG si: Tiene 2 o más errores ortográficos/gramaticales (incluyendo tildes faltantes, puntuación incorrecta, mayúsculas mal usadas, concordancia incorrecta)
 
-9. FIT CON EL ROL
-PASA si: Su experiencia es relevante para el rol y no hay downgrade jerárquico significativo
-RED FLAG si: No tiene experiencia relevante, está sobrecalificado con downgrade jerárquico claro (Head→Manager, Manager→Analyst, etc.), o busca algo completamente diferente. JERARQUÍA: Head > Manager > Lead > Senior > Specialist > Analyst > Coordinator > Junior
+9. HABILIDADES TÉCNICAS (NUEVO)
+PASA si: Demuestra experiencia sólida en las tecnologías/herramientas core mencionadas en el Job Description, con años de experiencia específicos cuando es posible determinar
+RED FLAG si: Le faltan habilidades técnicas fundamentales para el rol, no especifica años de experiencia en tecnologías clave, o solo menciona conocimientos superficiales
 
-10. FIT CON LA EMPRESA
+10. PORTAFOLIO Y PROYECTOS (NUEVO)
+PASA si: Menciona proyectos específicos con resultados cuantificables (mejoras de rendimiento, reducción de costos, métricas de impacto), contribuciones open source, o casos de estudio relevantes
+RED FLAG si: No presenta proyectos específicos, carece de métricas o resultados cuantificables, o los proyectos mencionados son muy básicos/académicos
+
+11. INDICADORES DE RIESGO (NUEVO)
+PASA si: No presenta gaps laborales sin explicación (>6 meses), cambios de trabajo coherentes (>1 año por posición), fechas y responsabilidades consistentes
+RED FLAG si: Tiene gaps laborales sin explicación >6 meses, cambios muy frecuentes (<1 año), inconsistencias en fechas/títulos/responsabilidades, o progresión de carrera incoherente
+
+12. FIT CON EL ROL (MEJORADO)
+PASA si: Su experiencia técnica específica, industria, y responsabilidades previas son altamente relevantes para el rol sin downgrade jerárquico significativo. Considera DETALLADAMENTE las tecnologías, metodologías y experiencia mencionadas en el JD
+RED FLAG si: No tiene experiencia técnica relevante específica, está sobrecalificado con downgrade jerárquico claro (Head→Manager, Manager→Analyst, etc.), le faltan habilidades técnicas core, o busca algo completamente diferente. JERARQUÍA: Head > Manager > Lead > Senior > Specialist > Analyst > Coordinator > Junior
+
+13. FIT CON LA EMPRESA
 PASA si: Su experiencia encaja con la industria/empresa, o la transición tiene sentido lógico
 RED FLAG si: Su experiencia no encaja con la industria, no hay conexión lógica, o falta información sobre su background empresarial
 
@@ -118,6 +130,9 @@ Responde EXACTAMENTE en este formato JSON:
     "careerGrowth": {"passed": [true/false], "message": "[explicación específica]"},
     "companyExperience": {"passed": [true/false], "message": "[explicación específica]"},
     "spelling": {"passed": [true/false], "message": "[explicación específica]"},
+    "technicalSkills": {"passed": [true/false], "message": "[explicación específica sobre habilidades técnicas vs. requisitos del JD]"},
+    "portfolioProjects": {"passed": [true/false], "message": "[explicación específica sobre proyectos y resultados cuantificables]"},
+    "riskIndicators": {"passed": [true/false], "message": "[explicación específica sobre gaps, cambios frecuentes e inconsistencias]"},
     "roleFit": {"passed": [true/false], "message": "[explicación específica${jobDescriptionText ? ' basada en la descripción completa del trabajo proporcionada' : ' considerando el rol: ' + roleInfo}]"},
     "companyFit": {"passed": [true/false], "message": "[explicación específica considerando la empresa: ${companyInfo}]"}
   }
@@ -130,7 +145,7 @@ Responde EXACTAMENTE en este formato JSON:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-2025-04-14',
+        model: 'gpt-5-2025-08-07',
         messages: [
           { 
             role: 'system', 
@@ -138,8 +153,7 @@ Responde EXACTAMENTE en este formato JSON:
           },
           { role: 'user', content: prompt }
         ],
-        max_tokens: 1500,
-        temperature: 0.3
+        max_completion_tokens: 2000
       }),
     });
 
