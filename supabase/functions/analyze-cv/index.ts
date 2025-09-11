@@ -117,6 +117,14 @@ ${cvText}
 Responde EXACTAMENTE en este formato JSON:
 {
   "feedback": "[explicación general de la evaluación basada en los criterios que pasaron y fallaron]",
+  "highlights": [
+    "[punto destacado específico sobre fortalezas, criterios que pasan, experiencias relevantes, etc.]",
+    "[otro punto positivo específico]"
+  ],
+  "alerts": [
+    "[alerta específica sobre criterios que fallan, áreas de preocupación, aspectos negativos]",
+    "[otra alerta específica]"
+  ],
   "criteria": {
     "jobStability": {"passed": [true/false], "message": "[explicación específica]"},
     "seniority": {"passed": [true/false], "message": "[explicación específica]"},
@@ -131,7 +139,14 @@ Responde EXACTAMENTE en este formato JSON:
     "technicalSkills": {"passed": [true/false], "message": "[explicación específica sobre habilidades técnicas adicionales y relevancia para el rol]"},
     "riskIndicators": {"passed": [true/false], "message": "[explicación específica sobre gaps laborales, consistencia de fechas, títulos y responsabilidades]"}
   }
-}`;
+}
+
+IMPORTANTE PARA HIGHLIGHTS Y ALERTS:
+- highlights: Incluye puntos específicos sobre fortalezas del candidato, criterios que pasa exitosamente, experiencias valiosas, habilidades destacadas, logros relevantes
+- alerts: Incluye aspectos preocupantes específicos, criterios que fallan, areas de riesgo, debilidades identificadas, gaps problemáticos
+- Cada punto debe ser específico y accionable
+- Genera entre 2-5 puntos para cada sección según la relevancia
+- No repitas información entre highlights y alerts`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -199,6 +214,8 @@ Responde EXACTAMENTE en este formato JSON:
         analysis_status: 'completed',
         score: analysis.score,
         feedback: analysis.feedback,
+        highlights: analysis.highlights || [],
+        alerts: analysis.alerts || [],
         criteria: analysis.criteria
       })
       .eq('id', evaluationId);

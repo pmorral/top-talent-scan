@@ -15,8 +15,8 @@ import axios from 'axios';
 interface CVAnalysis {
   score: number;
   feedback: string;
-  highlights?: string; // Puntos positivos
-  alerts?: string; // Puntos negativos/alertas
+  highlights?: string[]; // Puntos positivos
+  alerts?: string[]; // Puntos negativos/alertas
   criteria: {
     jobStability: { passed: boolean; message: string };
     seniority: { passed: boolean; message: string };
@@ -301,65 +301,11 @@ export const CVUploader = () => {
           companyFit: { passed: false, message: 'Sin análisis' }
         };
 
-        // Función para separar el feedback en positivos y negativos
-        const separateFeedback = (feedback: string) => {
-          const lines = feedback.split('\n').filter(line => line.trim());
-          const highlights: string[] = [];
-          const alerts: string[] = [];
-          
-          lines.forEach(line => {
-            const lowerLine = line.toLowerCase();
-            
-            // Palabras clave para alertas/aspectos negativos
-            const alertKeywords = [
-              'alerta', 'preocupa', 'falta', 'debilidad', 'problema', 'riesgo', 
-              'negativo', 'insuficiente', 'limitado', 'carece', 'ausencia',
-              'no tiene', 'sin experiencia', 'poca experiencia', 'inexperiencia',
-              'gap', 'brecha', 'inconsistencia', 'cambios frecuentes', 'inestabilidad',
-              'rotación', 'corto periodo', 'poco tiempo', 'saltos', 'dudoso',
-              'cuestionable', 'desfavorable', 'inadecuado', 'inapropiado'
-            ];
-            
-            // Palabras clave para puntos positivos
-            const highlightKeywords = [
-              'destacar', 'positivo', 'fortaleza', 'experiencia relevante', 'sólida',
-              'buena', 'excelente', 'apropiada', 'adecuada', 'amplia experiencia',
-              'trayectoria', 'consistente', 'estabilidad', 'progresión', 'crecimiento',
-              'especializado', 'expertise', 'competente', 'calificado', 'fuerte',
-              'impresionante', 'destacado', 'sobresaliente', 'valioso'
-            ];
-            
-            const hasAlertKeyword = alertKeywords.some(keyword => lowerLine.includes(keyword));
-            const hasHighlightKeyword = highlightKeywords.some(keyword => lowerLine.includes(keyword));
-            
-            if (hasAlertKeyword && !hasHighlightKeyword) {
-              alerts.push(line);
-            } else if (hasHighlightKeyword && !hasAlertKeyword) {
-              highlights.push(line);
-            } else {
-              // Para líneas ambiguas, usar contexto adicional
-              if (lowerLine.includes('no') || lowerLine.includes('sin') || 
-                  lowerLine.includes('poco') || lowerLine.includes('menos')) {
-                alerts.push(line);
-              } else {
-                highlights.push(line);
-              }
-            }
-          });
-          
-          return {
-            highlights: highlights.length > 0 ? highlights.join('\n') : 'Sin puntos destacados específicos.',
-            alerts: alerts.length > 0 ? alerts.join('\n') : 'Sin alertas específicas.'
-          };
-        };
-
-        const feedbackSeparated = separateFeedback(finalEvaluation.feedback || '');
-
         const analysisResult: CVAnalysis = {
           score: finalEvaluation.score || 0,
           feedback: finalEvaluation.feedback || '',
-          highlights: feedbackSeparated.highlights,
-          alerts: feedbackSeparated.alerts,
+          highlights: finalEvaluation.highlights || ['Sin puntos destacados específicos.'],
+          alerts: finalEvaluation.alerts || ['Sin alertas específicas.'],
           criteria: (finalEvaluation.criteria as CVAnalysis['criteria']) || defaultCriteria
         };
         setAnalysis(analysisResult);
