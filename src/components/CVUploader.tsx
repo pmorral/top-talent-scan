@@ -25,7 +25,6 @@ interface CVAnalysis {
     companyExperience: { passed: boolean; message: string };
     spelling: { passed: boolean; message: string };
     technicalSkills: { passed: boolean; message: string };
-    portfolioProjects: { passed: boolean; message: string };
     riskIndicators: { passed: boolean; message: string };
     roleFit: { passed: boolean; message: string };
     companyFit: { passed: boolean; message: string };
@@ -308,7 +307,6 @@ export const CVUploader = () => {
           companyExperience: { passed: false, message: 'Sin análisis' },
           spelling: { passed: false, message: 'Sin análisis' },
           technicalSkills: { passed: false, message: 'Sin análisis' },
-          portfolioProjects: { passed: false, message: 'Sin análisis' },
           riskIndicators: { passed: false, message: 'Sin análisis' },
           roleFit: { passed: false, message: 'Sin análisis' },
           companyFit: { passed: false, message: 'Sin análisis' }
@@ -539,7 +537,7 @@ export const CVUploader = () => {
                           {key === 'companyExperience' && 'Experiencia Empresarial'}
                           {key === 'spelling' && 'Ortografía'}
                           {key === 'technicalSkills' && 'Habilidades Técnicas'}
-                          {key === 'portfolioProjects' && 'Portafolio y Proyectos'}
+                          {key === 'riskIndicators' && 'Indicadores de Riesgo'}
                           {key === 'riskIndicators' && 'Indicadores de Riesgo'}
                           {key === 'roleFit' && 'Fit con el Rol'}
                           {key === 'companyFit' && 'Fit con la Empresa'}

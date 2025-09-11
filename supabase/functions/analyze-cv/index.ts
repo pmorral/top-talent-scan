@@ -43,7 +43,7 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    const prompt = `Analiza este CV y evalúalo según estos 13 criterios específicos para LaPieza.
+    const prompt = `Analiza este CV y evalúalo según estos 12 criterios específicos para LaPieza.
 
 REGLAS GLOBALES:
 - Solo existen 2 resultados para cada criterio: "PASA" o "RED FLAG"
@@ -89,19 +89,15 @@ RED FLAG si: Tiene 2 o más errores ortográficos/gramaticales (incluyendo tilde
 PASA si: Demuestra experiencia sólida en las tecnologías/herramientas core mencionadas en el Job Description, con años de experiencia específicos cuando es posible determinar
 RED FLAG si: Le faltan habilidades técnicas fundamentales para el rol, no especifica años de experiencia en tecnologías clave, o solo menciona conocimientos superficiales
 
-10. PORTAFOLIO Y PROYECTOS (NUEVO)
-PASA si: Menciona proyectos específicos con resultados cuantificables (mejoras de rendimiento, reducción de costos, métricas de impacto), contribuciones open source, o casos de estudio relevantes
-RED FLAG si: No presenta proyectos específicos, carece de métricas o resultados cuantificables, o los proyectos mencionados son muy básicos/académicos
-
-11. INDICADORES DE RIESGO (NUEVO)
+10. INDICADORES DE RIESGO (NUEVO)
 PASA si: No presenta gaps laborales sin explicación (>6 meses), cambios de trabajo coherentes (>1 año por posición), fechas y responsabilidades consistentes
 RED FLAG si: Tiene gaps laborales sin explicación >6 meses, cambios muy frecuentes (<1 año), inconsistencias en fechas/títulos/responsabilidades, o progresión de carrera incoherente
 
-12. FIT CON EL ROL (MEJORADO)
+11. FIT CON EL ROL (MEJORADO)
 PASA si: Su experiencia técnica específica, industria, y responsabilidades previas son altamente relevantes para el rol sin downgrade jerárquico significativo. Considera DETALLADAMENTE las tecnologías, metodologías y experiencia mencionadas en el JD
 RED FLAG si: No tiene experiencia técnica relevante específica, está sobrecalificado con downgrade jerárquico claro (Head→Manager, Manager→Analyst, etc.), le faltan habilidades técnicas core, o busca algo completamente diferente. JERARQUÍA: Head > Manager > Lead > Senior > Specialist > Analyst > Coordinator > Junior
 
-13. FIT CON LA EMPRESA
+12. FIT CON LA EMPRESA
 PASA si: Su experiencia encaja con la industria/empresa, o la transición tiene sentido lógico
 RED FLAG si: Su experiencia no encaja con la industria, no hay conexión lógica, o falta información sobre su background empresarial
 
@@ -131,7 +127,6 @@ Responde EXACTAMENTE en este formato JSON:
     "companyExperience": {"passed": [true/false], "message": "[explicación específica]"},
     "spelling": {"passed": [true/false], "message": "[explicación específica]"},
     "technicalSkills": {"passed": [true/false], "message": "[explicación específica sobre habilidades técnicas vs. requisitos del JD]"},
-    "portfolioProjects": {"passed": [true/false], "message": "[explicación específica sobre proyectos y resultados cuantificables]"},
     "riskIndicators": {"passed": [true/false], "message": "[explicación específica sobre gaps, cambios frecuentes e inconsistencias]"},
     "roleFit": {"passed": [true/false], "message": "[explicación específica${jobDescriptionText ? ' basada en la descripción completa del trabajo proporcionada' : ' considerando el rol: ' + roleInfo}]"},
     "companyFit": {"passed": [true/false], "message": "[explicación específica considerando la empresa: ${companyInfo}]"}
