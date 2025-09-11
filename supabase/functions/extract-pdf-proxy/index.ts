@@ -22,7 +22,7 @@ serve(async (req) => {
     }
 
     console.log('📄 URL del PDF:', cv_url);
-    console.log('⚙️ Configuración para máximo texto:', { mode: "text", need_personal_data: false });
+    console.log('⚙️ Probando con mode: "file" para texto más crudo:', { mode: "file", need_personal_data: true });
 
     // Call the tech team's API
     const response = await fetch(
@@ -34,8 +34,8 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           cv_url,
-          mode: "text", // Solo acepta "text" o "file"
-          need_personal_data: false, // Cambiado a false para evitar procesamiento adicional
+          mode: "file", // Probando "file" en lugar de "text" para obtener más información
+          need_personal_data: true, // Habilitando para ver si devuelve más datos
         }),
       }
     );
@@ -50,6 +50,7 @@ serve(async (req) => {
 
     const data = await response.json();
     console.log('📝 Datos recibidos:', Object.keys(data || {}));
+    console.log('🔍 RESPUESTA COMPLETA DE LA API:', JSON.stringify(data, null, 2).substring(0, 2000) + '...');
 
     // Validate response structure
     if (!data) {
