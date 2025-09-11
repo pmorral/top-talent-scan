@@ -145,7 +145,7 @@ Responde EXACTAMENTE en este formato JSON:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-2025-08-07',
+        model: 'gpt-4.1-2025-04-14',
         messages: [
           { 
             role: 'system', 
@@ -153,7 +153,8 @@ Responde EXACTAMENTE en este formato JSON:
           },
           { role: 'user', content: prompt }
         ],
-        max_completion_tokens: 2000
+        max_tokens: 2000,
+        temperature: 0.3
       }),
     });
 
