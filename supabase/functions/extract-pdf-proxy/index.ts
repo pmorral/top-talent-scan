@@ -22,7 +22,7 @@ serve(async (req) => {
     }
 
     console.log('📄 URL del PDF:', cv_url);
-    console.log('⚙️ Probando con mode: "file" para texto más crudo:', { mode: "file", need_personal_data: true });
+    console.log('⚙️ Probando con mode: "text" para obtener texto RAW sin procesar:', { mode: "text", need_personal_data: false });
 
     // Call the tech team's API
     const response = await fetch(
@@ -34,8 +34,8 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           cv_url,
-          mode: "file", // Probando "file" en lugar de "text" para obtener más información
-          need_personal_data: true, // Habilitando para ver si devuelve más datos
+          mode: "text", // Cambiado a "text" para obtener texto RAW sin procesar
+          need_personal_data: false, // No necesitamos datos personales procesados
         }),
       }
     );
