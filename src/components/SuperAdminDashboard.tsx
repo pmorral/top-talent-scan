@@ -152,11 +152,23 @@ export const SuperAdminDashboard = () => {
       );
     }
 
-    // Filter by user
+    // Filter by user (handle cases where there might be duplicate emails)
     if (selectedUserId !== 'all') {
-      filtered = filtered.filter(evaluation => 
-        evaluation.user_id === selectedUserId
-      );
+      // Check if selectedUserId is actually an email (for cases where there are duplicate emails)
+      const selectedProfile = profiles.find(p => p.user_id === selectedUserId);
+      if (selectedProfile) {
+        const userIdsWithSameEmail = profiles
+          .filter(p => p.email === selectedProfile.email)
+          .map(p => p.user_id);
+        
+        filtered = filtered.filter(evaluation => 
+          userIdsWithSameEmail.includes(evaluation.user_id)
+        );
+      } else {
+        filtered = filtered.filter(evaluation => 
+          evaluation.user_id === selectedUserId
+        );
+      }
     }
 
     setFilteredEvaluations(filtered);
