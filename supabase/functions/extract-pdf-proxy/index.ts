@@ -34,8 +34,8 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           cv_url,
-          mode: "text", // Cambiado a "text" para obtener texto RAW sin procesar
-          need_personal_data: false, // No necesitamos datos personales procesados
+          mode: "text",
+          need_text: true
         }),
       }
     );
