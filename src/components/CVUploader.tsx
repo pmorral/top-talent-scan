@@ -547,7 +547,7 @@ export const CVUploader = () => {
                           {key === 'technicalSkills' && 'Habilidades Técnicas Afines'}
                           {key === 'riskIndicators' && 'Indicadores de Riesgo'}
                         </h4>
-                        <Badge variant={criterion.passed ? "default" : "destructive"}>
+                        <Badge variant={criterion.passed ? "success" : "destructive"}>
                           {criterion.passed ? 'Aprobado' : 'Red Flag'}
                         </Badge>
                       </div>
