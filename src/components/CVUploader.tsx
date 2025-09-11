@@ -429,13 +429,26 @@ export const CVUploader = () => {
       currentY += companyLines.length * 5 + 15;
 
       // Score Section
-      pdf.setFontSize(16);
+      pdf.setFontSize(18);
       pdf.setFont('helvetica', 'bold');
+      pdf.text('CALIFICACIÓN GENERAL', margin, currentY);
+      currentY += 12;
+      
+      // Score box
       const scoreColor = analysis.score >= 8 ? [34, 197, 94] : analysis.score >= 6 ? [251, 191, 36] : [239, 68, 68];
+      pdf.setDrawColor(scoreColor[0], scoreColor[1], scoreColor[2]);
+      pdf.setLineWidth(2);
+      pdf.rect(margin, currentY, 100, 25);
+      
+      pdf.setFontSize(24);
       pdf.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2]);
-      pdf.text(`Puntuación: ${analysis.score}/12 - ${getScoreDefinition(analysis.score)}`, margin, currentY);
+      pdf.text(`${analysis.score}/12`, margin + 50, currentY + 18, { align: 'center' });
+      
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`${getScoreDefinition(analysis.score)}`, margin + 110, currentY + 18);
       pdf.setTextColor(0, 0, 0);
-      currentY += 20;
+      currentY += 35;
 
       // Highlights Section
       pdf.setFontSize(14);

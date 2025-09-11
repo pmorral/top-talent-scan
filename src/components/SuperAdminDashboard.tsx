@@ -7,7 +7,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Users, FileText, TrendingUp, BarChart3, Eye, CalendarIcon, Download, Building, Briefcase, Filter, X } from 'lucide-react';
+import { Users, FileText, TrendingUp, BarChart3, Eye, CalendarIcon, Download, Building, Briefcase, Filter, X, CheckCircle, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -23,6 +23,8 @@ interface CVEvaluation {
   score: number | null;
   feedback: string | null;
   criteria: any;
+  highlights: string[] | null;
+  alerts: string[] | null;
   role_info: string | null;
   company_info: string | null;
   created_at: string;
@@ -619,6 +621,52 @@ export const SuperAdminDashboard = () => {
               </div>
               <p className="mt-2 text-muted-foreground">{selectedEvaluation.feedback}</p>
             </div>
+
+            {/* Highlights and Alerts */}
+            {(selectedEvaluation.highlights || selectedEvaluation.alerts) && (
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-success flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4" />
+                    Puntos a destacar
+                  </h4>
+                  <div className="text-sm text-muted-foreground bg-success/5 p-3 rounded-lg border border-success/20">
+                    {selectedEvaluation.highlights && selectedEvaluation.highlights.length > 0 ? (
+                      <ul className="space-y-1">
+                        {selectedEvaluation.highlights.map((highlight: string, index: number) => (
+                          <li key={index} className="flex items-start gap-2">
+                            <span className="text-success mt-1">•</span>
+                            <span>{highlight}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <span>Sin puntos destacados específicos.</span>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-destructive flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    Alertas
+                  </h4>
+                  <div className="text-sm text-muted-foreground bg-destructive/5 p-3 rounded-lg border border-destructive/20">
+                    {selectedEvaluation.alerts && selectedEvaluation.alerts.length > 0 ? (
+                      <ul className="space-y-1">
+                        {selectedEvaluation.alerts.map((alert: string, index: number) => (
+                          <li key={index} className="flex items-start gap-2">
+                            <span className="text-destructive mt-1">•</span>
+                            <span>{alert}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <span>Sin alertas específicas.</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Criteria Details */}
             {selectedEvaluation.criteria && (
