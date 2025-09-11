@@ -5,12 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { FileText, Download, Eye, Calendar, CheckCircle, XCircle, Clock, BarChart3 } from 'lucide-react';
+import { FileText, Download, Eye, Calendar, CheckCircle, XCircle, Clock, BarChart3, FileDown } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import jsPDF from 'jspdf';
 
 interface CVEvaluation {
   id: string;
@@ -21,6 +22,8 @@ interface CVEvaluation {
   score: number | null;
   criteria: any;
   feedback: string | null;
+  highlights: string[] | null;
+  alerts: string[] | null;
   role_info: string | null;
   company_info: string | null;
   created_at: string;
@@ -117,7 +120,7 @@ export const UserHistory = () => {
         
         toast({
           title: "Descarga iniciada",
-          description: `Descargando ${evaluation.file_name}`,
+          description: `Descargando CV original: ${evaluation.file_name}`,
         });
       }
     } catch (error) {
@@ -128,6 +131,188 @@ export const UserHistory = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const downloadAnalysisResult = (evaluation: CVEvaluation) => {
+    const pdf = new jsPDF();
+    const margin = 20;
+    let currentY = margin;
+
+    // Header
+    pdf.setFontSize(20);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('RESULTADO DEL ANÁLISIS DE CV', margin, currentY);
+    currentY += 20;
+
+    // File info
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(`Archivo: ${evaluation.file_name}`, margin, currentY);
+    currentY += 8;
+    
+    if (evaluation.role_info) {
+      pdf.text(`Rol: ${evaluation.role_info}`, margin, currentY);
+      currentY += 8;
+    }
+    
+    if (evaluation.company_info) {
+      pdf.text(`Empresa: ${evaluation.company_info}`, margin, currentY);
+      currentY += 8;
+    }
+    
+    pdf.text(`Fecha de análisis: ${format(new Date(evaluation.created_at), 'dd/MM/yyyy HH:mm', { locale: es })}`, margin, currentY);
+    currentY += 20;
+
+    // Score Section
+    pdf.setFontSize(18);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('CALIFICACIÓN GENERAL', margin, currentY);
+    currentY += 12;
+    
+    // Score box
+    const scoreColor = evaluation.score! >= 8 ? [34, 197, 94] : evaluation.score! >= 6 ? [251, 191, 36] : [239, 68, 68];
+    pdf.setDrawColor(scoreColor[0], scoreColor[1], scoreColor[2]);
+    pdf.setLineWidth(2);
+    pdf.rect(margin, currentY, 100, 25);
+    
+    pdf.setFontSize(24);
+    pdf.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2]);
+    pdf.text(`${evaluation.score}/12`, margin + 50, currentY + 18, { align: 'center' });
+    
+    pdf.setFontSize(14);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`${getScoreDefinition(evaluation.score!)}`, margin + 110, currentY + 18);
+    pdf.setTextColor(0, 0, 0);
+    currentY += 35;
+
+    // Highlights Section
+    if (evaluation.highlights && evaluation.highlights.length > 0) {
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('PUNTOS A DESTACAR', margin, currentY);
+      currentY += 10;
+      
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(34, 197, 94);
+      
+      evaluation.highlights.forEach((highlight) => {
+        const lines = pdf.splitTextToSize(highlight, 170);
+        pdf.text(`• ${lines[0]}`, margin, currentY);
+        currentY += 6;
+        for (let i = 1; i < lines.length; i++) {
+          pdf.text(`  ${lines[i]}`, margin, currentY);
+          currentY += 6;
+        }
+      });
+      
+      pdf.setTextColor(0, 0, 0);
+      currentY += 10;
+    }
+
+    // Alerts Section
+    if (evaluation.alerts && evaluation.alerts.length > 0) {
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('ALERTAS', margin, currentY);
+      currentY += 10;
+      
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(239, 68, 68);
+      
+      evaluation.alerts.forEach((alert) => {
+        const lines = pdf.splitTextToSize(alert, 170);
+        pdf.text(`• ${lines[0]}`, margin, currentY);
+        currentY += 6;
+        for (let i = 1; i < lines.length; i++) {
+          pdf.text(`  ${lines[i]}`, margin, currentY);
+          currentY += 6;
+        }
+      });
+      
+      pdf.setTextColor(0, 0, 0);
+      currentY += 10;
+    }
+
+    // Criteria Section
+    if (evaluation.criteria) {
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('DETALLES DE CRITERIOS', margin, currentY);
+      currentY += 10;
+
+      const criteriaNames = {
+        jobStability: 'Estabilidad Laboral',
+        seniority: 'Seniority/Experiencia',
+        education: 'Educación',
+        language: 'Idiomas',
+        certifications: 'Certificaciones',
+        careerGrowth: 'Crecimiento Profesional',
+        companyExperience: 'Experiencia en Empresas',
+        spelling: 'Ortografía y Gramática',
+        roleFit: 'Fit con el Rol',
+        companyFit: 'Fit con la Empresa'
+      };
+
+      Object.entries(evaluation.criteria).forEach(([key, criterion]: [string, any]) => {
+        if (currentY > 250) {
+          pdf.addPage();
+          currentY = margin;
+        }
+        
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'bold');
+        const statusIcon = criterion.passed ? '✓' : '✗';
+        const statusColor = criterion.passed ? [34, 197, 94] : [239, 68, 68];
+        
+        pdf.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
+        pdf.text(`${statusIcon} ${criteriaNames[key as keyof typeof criteriaNames] || key}`, margin, currentY);
+        
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        
+        const messageLines = pdf.splitTextToSize(criterion.message, 170);
+        currentY += 8;
+        messageLines.forEach((line: string) => {
+          pdf.text(line, margin + 5, currentY);
+          currentY += 5;
+        });
+        
+        currentY += 5;
+      });
+    }
+
+    // Feedback Section
+    if (evaluation.feedback) {
+      if (currentY > 200) {
+        pdf.addPage();
+        currentY = margin;
+      }
+      
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('FEEDBACK GENERAL', margin, currentY);
+      currentY += 10;
+      
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      const feedbackLines = pdf.splitTextToSize(evaluation.feedback, 170);
+      feedbackLines.forEach((line: string) => {
+        pdf.text(line, margin, currentY);
+        currentY += 5;
+      });
+    }
+
+    // Save the PDF
+    const fileName = `Análisis_${evaluation.file_name.replace('.pdf', '')}_${format(new Date(), 'ddMMyyyy_HHmm')}.pdf`;
+    pdf.save(fileName);
+    
+    toast({
+      title: "Descarga iniciada",
+      description: `Descargando resultado del análisis: ${fileName}`,
+    });
   };
 
   const CriteriaIcon = ({ passed }: { passed: boolean }) => {
@@ -231,18 +416,20 @@ export const UserHistory = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
                           {evaluation.analysis_status === 'completed' && evaluation.criteria && (
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => setSelectedEvaluation(evaluation)}
-                                >
-                                  <Eye className="h-3 w-3" />
-                                </Button>
-                              </DialogTrigger>
+                            <>
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => setSelectedEvaluation(evaluation)}
+                                    title="Ver detalles del análisis"
+                                  >
+                                    <Eye className="h-3 w-3" />
+                                  </Button>
+                                </DialogTrigger>
                               <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                                 <DialogHeader>
                                   <DialogTitle>Detalles de la Evaluación</DialogTitle>
@@ -305,13 +492,25 @@ export const UserHistory = () => {
                                   </div>
                                 )}
                               </DialogContent>
-                            </Dialog>
+                              </Dialog>
+                              
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => downloadAnalysisResult(evaluation)}
+                                title="Descargar resultado del análisis"
+                                className="bg-primary/5 hover:bg-primary/10"
+                              >
+                                <FileDown className="h-3 w-3" />
+                              </Button>
+                            </>
                           )}
                           
                           <Button 
                             variant="outline" 
                             size="sm"
                             onClick={() => downloadCV(evaluation)}
+                            title="Descargar CV original"
                           >
                             <Download className="h-3 w-3" />
                           </Button>

@@ -7,7 +7,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Users, FileText, TrendingUp, BarChart3, Eye, CalendarIcon, Download, Building, Briefcase, Filter, X, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Users, FileText, TrendingUp, BarChart3, Eye, CalendarIcon, Download, Building, Briefcase, Filter, X, CheckCircle, AlertTriangle, FileDown } from 'lucide-react';
+import jsPDF from 'jspdf';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -255,6 +256,195 @@ export const SuperAdminDashboard = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const downloadAnalysisResult = (evaluation: CVEvaluation) => {
+    const pdf = new jsPDF();
+    const margin = 20;
+    let currentY = margin;
+
+    // Helper functions
+    const getScoreDefinition = (score: number) => {
+      if (score >= 11) return "HIRE";
+      if (score >= 8) return "MAYBE";
+      return "NO HIRE";
+    };
+
+    // Header
+    pdf.setFontSize(20);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('RESULTADO DEL ANÁLISIS DE CV', margin, currentY);
+    currentY += 20;
+
+    // File info
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(`Archivo: ${evaluation.file_name}`, margin, currentY);
+    currentY += 8;
+    
+    if (evaluation.role_info) {
+      pdf.text(`Rol: ${evaluation.role_info}`, margin, currentY);
+      currentY += 8;
+    }
+    
+    if (evaluation.company_info) {
+      pdf.text(`Empresa: ${evaluation.company_info}`, margin, currentY);
+      currentY += 8;
+    }
+    
+    pdf.text(`Fecha de análisis: ${format(new Date(evaluation.created_at), 'dd/MM/yyyy HH:mm')}`, margin, currentY);
+    currentY += 20;
+
+    // Score Section
+    pdf.setFontSize(18);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('CALIFICACIÓN GENERAL', margin, currentY);
+    currentY += 12;
+    
+    // Score box
+    const scoreColor = evaluation.score! >= 8 ? [34, 197, 94] : evaluation.score! >= 6 ? [251, 191, 36] : [239, 68, 68];
+    pdf.setDrawColor(scoreColor[0], scoreColor[1], scoreColor[2]);
+    pdf.setLineWidth(2);
+    pdf.rect(margin, currentY, 100, 25);
+    
+    pdf.setFontSize(24);
+    pdf.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2]);
+    pdf.text(`${evaluation.score}/12`, margin + 50, currentY + 18, { align: 'center' });
+    
+    pdf.setFontSize(14);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`${getScoreDefinition(evaluation.score!)}`, margin + 110, currentY + 18);
+    pdf.setTextColor(0, 0, 0);
+    currentY += 35;
+
+    // Highlights Section
+    if (evaluation.highlights && evaluation.highlights.length > 0) {
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('PUNTOS A DESTACAR', margin, currentY);
+      currentY += 10;
+      
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(34, 197, 94);
+      
+      evaluation.highlights.forEach((highlight) => {
+        const lines = pdf.splitTextToSize(highlight, 170);
+        pdf.text(`• ${lines[0]}`, margin, currentY);
+        currentY += 6;
+        for (let i = 1; i < lines.length; i++) {
+          pdf.text(`  ${lines[i]}`, margin, currentY);
+          currentY += 6;
+        }
+      });
+      
+      pdf.setTextColor(0, 0, 0);
+      currentY += 10;
+    }
+
+    // Alerts Section
+    if (evaluation.alerts && evaluation.alerts.length > 0) {
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('ALERTAS', margin, currentY);
+      currentY += 10;
+      
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(239, 68, 68);
+      
+      evaluation.alerts.forEach((alert) => {
+        const lines = pdf.splitTextToSize(alert, 170);
+        pdf.text(`• ${lines[0]}`, margin, currentY);
+        currentY += 6;
+        for (let i = 1; i < lines.length; i++) {
+          pdf.text(`  ${lines[i]}`, margin, currentY);
+          currentY += 6;
+        }
+      });
+      
+      pdf.setTextColor(0, 0, 0);
+      currentY += 10;
+    }
+
+    // Criteria Section
+    if (evaluation.criteria) {
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('DETALLES DE CRITERIOS', margin, currentY);
+      currentY += 10;
+
+      const criteriaNames = {
+        jobStability: 'Estabilidad Laboral',
+        seniority: 'Seniority/Experiencia',
+        education: 'Educación',
+        language: 'Idiomas',
+        certifications: 'Certificaciones',
+        careerGrowth: 'Crecimiento Profesional',
+        companyExperience: 'Experiencia en Empresas',
+        spelling: 'Ortografía y Gramática',
+        roleFit: 'Fit con el Rol',
+        companyFit: 'Fit con la Empresa'
+      };
+
+      Object.entries(evaluation.criteria).forEach(([key, criterion]: [string, any]) => {
+        if (currentY > 250) {
+          pdf.addPage();
+          currentY = margin;
+        }
+        
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'bold');
+        const statusIcon = criterion.passed ? '✓' : '✗';
+        const statusColor = criterion.passed ? [34, 197, 94] : [239, 68, 68];
+        
+        pdf.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
+        pdf.text(`${statusIcon} ${criteriaNames[key as keyof typeof criteriaNames] || key}`, margin, currentY);
+        
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        
+        const messageLines = pdf.splitTextToSize(criterion.message, 170);
+        currentY += 8;
+        messageLines.forEach((line: string) => {
+          pdf.text(line, margin + 5, currentY);
+          currentY += 5;
+        });
+        
+        currentY += 5;
+      });
+    }
+
+    // Feedback Section
+    if (evaluation.feedback) {
+      if (currentY > 200) {
+        pdf.addPage();
+        currentY = margin;
+      }
+      
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('FEEDBACK GENERAL', margin, currentY);
+      currentY += 10;
+      
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      const feedbackLines = pdf.splitTextToSize(evaluation.feedback, 170);
+      feedbackLines.forEach((line: string) => {
+        pdf.text(line, margin, currentY);
+        currentY += 5;
+      });
+    }
+
+    // Save the PDF
+    const fileName = `Análisis_${evaluation.file_name.replace('.pdf', '')}_${format(new Date(), 'ddMMyyyy_HHmm')}.pdf`;
+    pdf.save(fileName);
+    
+    toast({
+      title: "Descarga iniciada",
+      description: `Descargando resultado del análisis: ${fileName}`,
+    });
   };
 
   if (loading) {
@@ -542,23 +732,34 @@ export const SuperAdminDashboard = () => {
                           </div>
                         </td>
                         <td className="p-4">
-                          <div className="flex gap-2">
+                          <div className="flex gap-1">
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => setSelectedEvaluation(evaluation)}
                               disabled={evaluation.analysis_status !== 'completed'}
+                              title="Ver detalles del análisis"
                             >
-                              <Eye className="h-4 w-4 mr-2" />
-                              Ver detalles
+                              <Eye className="h-4 w-4" />
                             </Button>
+                            {evaluation.analysis_status === 'completed' && evaluation.score !== null && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => downloadAnalysisResult(evaluation)}
+                                title="Descargar resultado del análisis"
+                                className="bg-primary/5 hover:bg-primary/10"
+                              >
+                                <FileDown className="h-4 w-4" />
+                              </Button>
+                            )}
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => downloadCV(evaluation)}
+                              title="Descargar CV original"
                             >
-                              <Download className="h-4 w-4 mr-2" />
-                              Descargar
+                              <Download className="h-4 w-4" />
                             </Button>
                           </div>
                         </td>
