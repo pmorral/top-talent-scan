@@ -556,7 +556,7 @@ export const CVUploader = () => {
                           {key === 'riskIndicators' && 'Indicadores de Riesgo'}
                         </h4>
                         <Badge variant={criterion.passed ? "success" : "destructive"}>
-                          {criterion.passed ? 'Aprobado' : 'Red Flag'}
+                          {criterion.passed ? 'Aprobado' : 'Alerta'}
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">
