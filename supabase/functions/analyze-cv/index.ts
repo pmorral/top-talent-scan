@@ -66,8 +66,9 @@ PASA si: Tiene carrera universitaria terminada (Licenciatura/Ingeniería/Bachelo
 RED FLAG si: No tiene carrera universitaria terminada, solo tiene carrera técnica, o no se especifica educación
 
 4. INGLÉS
-PASA si: Menciona nivel B2+ o intermedio-avanzado, O el CV está escrito completamente en inglés (más del 80% del contenido en inglés), O trabajó en empresa internacional con evidencia de uso del inglés
-RED FLAG si: No menciona inglés, indica nivel básico/A1/A2, o no hay evidencia de manejo del idioma y el CV está escrito en español
+PASA si: Menciona nivel B2+ o intermedio-avanzado, O el CV está escrito completamente en inglés (revisa si las secciones principales como experiencia laboral, educación, habilidades están en inglés - palabras como "Experience", "Education", "Skills", "Manager", "Developer", etc.), O trabajó en empresa internacional con evidencia de uso del inglés
+RED FLAG si: El CV está escrito principalmente en español Y no menciona inglés, O indica nivel básico/A1/A2, O no hay evidencia de manejo del idioma
+IMPORTANTE: Si detectas que el CV está escrito en inglés, automáticamente debe PASAR este criterio independientemente de si menciona o no el nivel de inglés explícitamente.
 
 5. CERTIFICACIONES
 PASA si: Tiene al menos 1 certificación o curso relevante para su área profesional
