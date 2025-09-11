@@ -22,7 +22,7 @@ serve(async (req) => {
     }
 
     console.log('📄 URL del PDF:', cv_url);
-    console.log('⚙️ Configuración:', { mode, need_personal_data });
+    console.log('⚙️ Configuración FORZADA para texto RAW:', { mode: "raw_text", need_personal_data: false });
 
     // Call the tech team's API
     const response = await fetch(
@@ -34,8 +34,8 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           cv_url,
-          mode: mode || "text",
-          need_personal_data: need_personal_data || true,
+          mode: "raw_text", // Cambio crítico: solicitar texto RAW completo del PDF
+          need_personal_data: false, // No necesitamos data personal procesada, solo texto bruto
         }),
       }
     );
@@ -85,6 +85,8 @@ serve(async (req) => {
     }
 
     console.log('✅ Extracción exitosa:', cleanText.length, 'caracteres');
+    console.log('📄 MUESTRA DEL TEXTO RAW (primeros 500 chars):', cleanText.substring(0, 500));
+    console.log('📄 MUESTRA DEL TEXTO RAW (últimos 500 chars):', cleanText.substring(Math.max(0, cleanText.length - 500)));
 
     return new Response(
       JSON.stringify({ 
