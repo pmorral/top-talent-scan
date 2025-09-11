@@ -1,16 +1,119 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Webhook } from "https://esm.sh/standardwebhooks@1.0.0";
-import { Resend } from "npm:resend@4.0.0";
-import { renderAsync } from "npm:@react-email/components@0.0.22";
-import React from "npm:react@18.3.1";
-import { VerificationEmail } from "./_templates/verification-email.tsx";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-const hookSecret = Deno.env.get("AUTH_EMAIL_HOOK_SECRET") || "your-webhook-secret";
+const supabaseUrl = Deno.env.get('SUPABASE_URL') as string;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string;
+
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+interface AuthEmailRequest {
+  email: string;
+  type: 'signup' | 'recovery' | 'email_change';
+  redirect_to?: string;
+}
+
+const getEmailTemplate = (type: string, confirmationUrl: string, userEmail: string) => {
+  const baseStyles = `
+    <style>
+      body { font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Ubuntu,sans-serif; margin: 0; padding: 0; background-color: #f6f9fc; }
+      .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+      .header { padding: 32px 24px 0; text-align: center; border-bottom: 1px solid #e6ebf1; margin-bottom: 32px; }
+      .logo { color: #1a202c; font-size: 32px; font-weight: bold; margin: 0 0 8px; }
+      .tagline { color: #718096; font-size: 16px; margin: 0 0 24px; font-weight: 500; }
+      .content { padding: 0 24px; }
+      .heading { color: #1a202c; font-size: 24px; font-weight: bold; margin: 0 0 24px; text-align: center; }
+      .text { color: #4a5568; font-size: 16px; line-height: 26px; margin: 16px 0; }
+      .button-container { text-align: center; margin: 32px 0; }
+      .button { background-color: #3182ce; border-radius: 8px; color: #ffffff; font-size: 16px; font-weight: bold; text-decoration: none; display: inline-block; padding: 16px 32px; }
+      .link { color: #3182ce; font-size: 14px; text-decoration: underline; word-break: break-all; }
+      .footer-text { color: #a0aec0; font-size: 14px; line-height: 20px; margin: 32px 0 0; font-style: italic; }
+      .footer { border-top: 1px solid #e6ebf1; padding: 24px 24px 0; text-align: center; margin-top: 48px; }
+      .footer-small { color: #a0aec0; font-size: 12px; margin: 0 0 8px; }
+    </style>
+  `;
+
+  const getContent = () => {
+    switch (type) {
+      case 'signup':
+        return {
+          subject: "Confirma tu cuenta en LaPieza - CV Evaluator",
+          heading: "¡Bienvenido a LaPieza CV Evaluator!",
+          text: "Gracias por registrarte. Para completar tu registro y acceder a nuestra plataforma de evaluación de CVs, confirma tu dirección de email haciendo clic en el botón de abajo.",
+          buttonText: "Confirmar Email",
+          footer: "Si no te registraste en LaPieza, puedes ignorar este email de forma segura.",
+        };
+      case 'recovery':
+        return {
+          subject: "Restablece tu contraseña en LaPieza",
+          heading: "Restablece tu contraseña",
+          text: "Recibimos una solicitud para restablecer la contraseña de tu cuenta en LaPieza CV Evaluator. Haz clic en el botón de abajo para crear una nueva contraseña.",
+          buttonText: "Restablecer Contraseña",
+          footer: "Si no solicitaste restablecer tu contraseña, puedes ignorar este email de forma segura.",
+        };
+      default:
+        return {
+          subject: "Acción requerida en LaPieza",
+          heading: "Acción requerida",
+          text: "Se requiere una acción de tu parte para continuar con LaPieza CV Evaluator.",
+          buttonText: "Continuar",
+          footer: "Si no esperabas este email, puedes ignorarlo de forma segura.",
+        };
+    }
+  };
+
+  const content = getContent();
+
+  return {
+    subject: content.subject,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${content.subject}</title>
+        ${baseStyles}
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 class="logo">LaPieza</h1>
+            <p class="tagline">CV Evaluator</p>
+          </div>
+          
+          <div class="content">
+            <h2 class="heading">${content.heading}</h2>
+            
+            <p class="text">Hola,</p>
+            
+            <p class="text">${content.text}</p>
+
+            <div class="button-container">
+              <a href="${confirmationUrl}" class="button">${content.buttonText}</a>
+            </div>
+
+            <p class="text" style="color: #718096; font-size: 14px; margin: 24px 0 8px;">
+              O copia y pega este enlace en tu navegador:
+            </p>
+            <a href="${confirmationUrl}" class="link">${confirmationUrl}</a>
+
+            <p class="footer-text">${content.footer}</p>
+          </div>
+
+          <div class="footer">
+            <p class="footer-small">© 2024 LaPieza. Todos los derechos reservados.</p>
+            <p class="footer-small">LaPieza CV Evaluator - Herramienta interna de evaluación</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+  };
 };
 
 const handler = async (req: Request): Promise<Response> => {
@@ -23,83 +126,44 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const payload = await req.text();
-    const headers = Object.fromEntries(req.headers);
-    
-    // Verify webhook signature
-    const wh = new Webhook(hookSecret);
-    const {
-      user,
-      email_data: { token, token_hash, redirect_to, email_action_type, site_url },
-    } = wh.verify(payload, headers) as {
-      user: {
-        email: string;
-        id: string;
-      };
-      email_data: {
-        token: string;
-        token_hash: string;
-        redirect_to: string;
-        email_action_type: string;
-        site_url: string;
-      };
-    };
+    const { email, type, redirect_to }: AuthEmailRequest = await req.json();
 
-    console.log(`Sending ${email_action_type} email to ${user.email}`);
+    console.log(`Processing ${type} email for ${email}`);
 
-    // Generate email content based on action type
-    let subject: string;
-    let emailComponent: React.ReactElement;
+    let result;
+    const redirectUrl = redirect_to || `${supabaseUrl.replace('supabase.co', 'supabase.io')}/auth/v1/verify`;
 
-    switch (email_action_type) {
-      case "signup":
-      case "email_change_confirmation":
-        subject = "Confirma tu cuenta en LaPieza - CV Evaluator";
-        emailComponent = React.createElement(VerificationEmail, {
-          confirmationUrl: `${site_url}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${redirect_to}`,
-          userEmail: user.email,
-          actionType: "confirmation",
+    switch (type) {
+      case 'signup':
+        // Use Supabase's built-in auth system but with custom redirect
+        result = await supabase.auth.admin.inviteUserByEmail(email, {
+          redirectTo: redirect_to || window?.location?.origin || 'https://cv-test.lapieza.ai'
         });
         break;
       
-      case "recovery":
-        subject = "Restablece tu contraseña en LaPieza";
-        emailComponent = React.createElement(VerificationEmail, {
-          confirmationUrl: `${site_url}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${redirect_to}`,
-          userEmail: user.email,
-          actionType: "recovery",
+      case 'recovery':
+        result = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: redirect_to || window?.location?.origin || 'https://cv-test.lapieza.ai'
         });
         break;
       
       default:
-        subject = "Acción requerida en LaPieza";
-        emailComponent = React.createElement(VerificationEmail, {
-          confirmationUrl: `${site_url}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${redirect_to}`,
-          userEmail: user.email,
-          actionType: "generic",
-        });
+        throw new Error(`Unsupported email type: ${type}`);
     }
 
-    // Render email HTML
-    const html = await renderAsync(emailComponent);
-
-    // Send email via Resend
-    const { data, error } = await resend.emails.send({
-      from: "LaPieza CV Evaluator <noreply@lapieza.io>",
-      to: [user.email],
-      subject,
-      html,
-    });
-
-    if (error) {
-      console.error("Error sending email:", error);
-      throw error;
+    if (result.error) {
+      console.error(`Error sending ${type} email:`, result.error);
+      throw result.error;
     }
 
-    console.log("Email sent successfully:", data);
+    console.log(`${type} email sent successfully to ${email}`);
 
     return new Response(
-      JSON.stringify({ success: true, messageId: data?.id }),
+      JSON.stringify({ 
+        success: true, 
+        message: `${type} email sent successfully`,
+        data: result.data 
+      }),
       {
         status: 200,
         headers: {
