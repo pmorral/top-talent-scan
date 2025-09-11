@@ -30,6 +30,37 @@ serve(async (req) => {
     }
 
     console.log('Starting CV analysis for evaluation:', evaluationId);
+    
+    // DETAILED LOGGING - Log CV text content and analysis
+    console.log('=== DETAILED CV ANALYSIS LOGGING ===');
+    console.log('CV Text Length:', cvText.length);
+    console.log('CV Text (first 500 chars):', cvText.substring(0, 500));
+    console.log('CV Text (last 500 chars):', cvText.substring(Math.max(0, cvText.length - 500)));
+    
+    // Detect dates/numbers in CV text
+    const datePatterns = [
+      /\d{4}\s*[-–]\s*\d{4}/g, // 2020-2022, 2020 - 2022
+      /\d{4}\s*[-–]\s*presente/gi, // 2020-presente
+      /\d{4}/g, // Single years
+      /(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+\d{4}/gi, // Month Year
+      /\d{1,2}\/\d{4}/g, // MM/YYYY
+      /\d{1,2}\/\d{1,2}\/\d{4}/g // DD/MM/YYYY
+    ];
+    
+    const foundDates = [];
+    datePatterns.forEach((pattern, index) => {
+      const matches = cvText.match(pattern);
+      if (matches) {
+        foundDates.push({ pattern: index + 1, matches: matches.slice(0, 5) }); // First 5 matches only
+      }
+    });
+    
+    console.log('Date Detection Results:');
+    console.log('Found date patterns:', foundDates.length > 0 ? foundDates : 'NO DATES FOUND');
+    console.log('Contains years (2000-2030):', /20[0-2]\d/.test(cvText));
+    console.log('Contains dashes/hyphens:', /[-–]/.test(cvText));
+    console.log('Contains "presente":', /presente/i.test(cvText));
+    console.log('=======================================');
 
     // Update status to analyzing
     await supabase
@@ -45,10 +76,29 @@ serve(async (req) => {
 
     const prompt = `Analiza DETALLADAMENTE TODO EL TEXTO BRUTO del CV y evalúalo según estos 12 criterios específicos para LaPieza.
 
+INSTRUCCIONES CRÍTICAS DE ANÁLISIS DE FECHAS:
+- ANTES de evaluar cualquier criterio, IDENTIFICA Y CITA todas las fechas que encuentres en el CV
+- Los formatos de fecha válidos incluyen: "2020-2022", "2020", "Enero 2020", "Mar 2020 - Dic 2021", "2019-presente", "2018 a 2020", "2021-actualidad"
+- NUNCA digas que "no hay fechas" si encuentras CUALQUIER indicación temporal (años, meses, períodos)
+- Si ves años como "2020", "2021", etc., estos SON fechas válidas para calcular experiencia
+- CITA ESPECÍFICAMENTE las fechas encontradas en tus explicaciones
+
+EJEMPLOS DE INTERPRETACIÓN CORRECTA:
+- "Trabajó en empresa X desde 2020 hasta 2022" = 2 años de experiencia
+- "2019-presente" = desde 2019 hasta ahora (calcular años)
+- "Enero 2020 - Marzo 2022" = más de 2 años
+- "2018, 2020, 2022" = fechas válidas, calcular duración por contexto
+
+EJEMPLOS DE ERRORES A EVITAR:
+- ❌ "No se presentan fechas" cuando hay años como 2020, 2021
+- ❌ "No hay información temporal" cuando menciona "desde 2019"
+- ❌ Ignorar años sueltos que indican períodos de trabajo
+
 INSTRUCCIONES CRÍTICAS DE ANÁLISIS:
 - DEBES analizar todo el texto completo del CV sin resumir ni omitir información
 - Lee cuidadosamente TODAS las fechas, períodos laborales, y detalles antes de evaluar
 - No hagas suposiciones - basa tu evaluación únicamente en lo que aparece en el CV
+- SIEMPRE cita las fechas específicas que encontraste al evaluar estabilidad laboral y indicadores de riesgo
 
 REGLAS GLOBALES:
 - Solo existen 2 resultados para cada criterio: "PASA" o "RED FLAG"
@@ -59,9 +109,11 @@ REGLAS GLOBALES:
 CRITERIOS:
 
 1. ESTABILIDAD LABORAL
-FORMATOS DE FECHA VÁLIDOS: "2020-2022", "Enero 2020 - Marzo 2022", "2020", "2019-presente", "Mar 2020 - Dic 2021"
-PASA si: Ha estado 1 año o más en la mayoría de sus últimos 5 trabajos (calcula duración basado en fechas disponibles)
-RED FLAG si: Ha estado menos de 1 año en 2 o más de sus últimos 5 trabajos, o genuinamente NO hay fechas de ningún tipo
+INSTRUCCIÓN CRÍTICA: ANTES de evaluar, LISTA todas las fechas que encuentres en el CV (ejemplo: "Encontré: 2020-2022, 2019, Enero 2018")
+FORMATOS DE FECHA VÁLIDOS: "2020-2022", "Enero 2020 - Marzo 2022", "2020", "2019-presente", "Mar 2020 - Dic 2021", "2018 a 2020"
+PASA si: Ha estado 1 año o más en la mayoría de sus últimos 5 trabajos (CITA las fechas específicas encontradas)
+RED FLAG si: Ha estado menos de 1 año en 2 o más de sus últimos 5 trabajos, o GENUINAMENTE no existe NINGUNA indicación temporal en todo el CV
+IMPORTANTE: Si hay CUALQUIER año (2020, 2021, etc.) o período (presente, actualidad), NO es "falta de fechas"
 
 2. SENIORITY
 PASA si: Tiene 3 años o más de experiencia profesional total
@@ -96,11 +148,12 @@ PASA si: Demuestra experiencia sólida en las tecnologías/herramientas core men
 RED FLAG si: Le faltan habilidades técnicas fundamentales para el rol, no especifica años de experiencia en tecnologías clave, o solo menciona conocimientos superficiales
 
 10. INDICADORES DE RIESGO (MEJORADO)
-FORMATOS DE FECHA VÁLIDOS PARA ESTE CRITERIO: Cualquier formato que indique períodos (años, rangos, fechas específicas)
-EJEMPLOS DE FECHAS VÁLIDAS: "2020-2022", "2019", "Ene 2020 - Mar 2022", "2018-presente"
+INSTRUCCIÓN CRÍTICA: ANTES de evaluar, LISTA todas las fechas encontradas en el CV y calcula períodos específicos
+FORMATOS DE FECHA VÁLIDOS: Cualquier formato que indique períodos (años, rangos, fechas específicas)
+EJEMPLOS DE FECHAS VÁLIDAS: "2020-2022", "2019", "Ene 2020 - Mar 2022", "2018-presente", "desde 2020", "hasta 2022"
 PASA si: No presenta gaps laborales genuinos sin explicación (>6 meses entre empleos), cambios de trabajo coherentes, fechas consistentes
 RED FLAG si: Tiene gaps laborales reales sin explicación >6 meses, cambios extremadamente frecuentes (<6 meses), inconsistencias claras en fechas/títulos, o progresión de carrera completamente incoherente
-IMPORTANTE: Si hay fechas en cualquier formato (incluso solo años), NO consideres esto como "falta de información de fechas"
+REGLA ABSOLUTA: Si encuentras CUALQUIER indicación temporal (años, períodos, fechas), NUNCA digas "no hay fechas" - CITA las fechas específicas encontradas
 
 11. FIT CON EL ROL (MEJORADO)
 PASA si: Su experiencia técnica específica, industria, y responsabilidades previas son altamente relevantes para el rol sin downgrade jerárquico significativo. Considera DETALLADAMENTE las tecnologías, metodologías y experiencia mencionadas en el JD
@@ -142,6 +195,12 @@ Responde EXACTAMENTE en este formato JSON:
   }
 }`;
 
+    // Log the prompt being sent to OpenAI for debugging
+    console.log('=== PROMPT BEING SENT TO OPENAI ===');
+    console.log('Prompt length:', prompt.length);
+    console.log('CV Text being analyzed (first 200 chars):', cvText.substring(0, 200));
+    console.log('====================================');
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -153,7 +212,7 @@ Responde EXACTAMENTE en este formato JSON:
         messages: [
           { 
             role: 'system', 
-            content: 'Eres un experto en recursos humanos de LaPieza analizando CVs. Responde solo en el formato JSON solicitado, sin texto adicional.' 
+            content: 'Eres un experto en recursos humanos de LaPieza analizando CVs. DEBES seguir exactamente las instrucciones sobre fechas. ANTES de evaluar cualquier criterio, identifica todas las fechas presentes en el CV. Responde solo en el formato JSON solicitado.' 
           },
           { role: 'user', content: prompt }
         ],
