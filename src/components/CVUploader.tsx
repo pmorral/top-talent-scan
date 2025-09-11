@@ -348,6 +348,14 @@ export const CVUploader = () => {
     setIsAnalyzing(false);
   };
 
+  const resetOnlyCV = () => {
+    setFile(null);
+    setAnalysis(null);
+    setProgress(0);
+    setIsAnalyzing(false);
+    // Mantiene roleInfo y companyInfo
+  };
+
   const removeFile = () => {
     setFile(null);
     setProgress(0);
@@ -568,13 +576,19 @@ export const CVUploader = () => {
                 <div className="space-y-2">
                   <h3 className="text-lg font-semibold">¿Necesitas evaluar otro CV?</h3>
                   <p className="text-muted-foreground">
-                    Comienza un nuevo análisis desde cero
+                    Puedes evaluar otro CV para la misma vacante o comenzar desde cero
                   </p>
                 </div>
-                <Button onClick={resetAnalysis} variant="outline" className="flex items-center gap-2">
-                  <RotateCcw className="h-4 w-4" />
-                  Evaluar Nuevo CV
-                </Button>
+                <div className="flex gap-3 justify-center flex-wrap">
+                  <Button onClick={resetOnlyCV} variant="default" className="flex items-center gap-2">
+                    <Upload className="h-4 w-4" />
+                    Otro CV para esta vacante
+                  </Button>
+                  <Button onClick={resetAnalysis} variant="outline" className="flex items-center gap-2">
+                    <RotateCcw className="h-4 w-4" />
+                    Nueva vacante
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
