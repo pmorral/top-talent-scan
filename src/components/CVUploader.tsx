@@ -15,6 +15,8 @@ import axios from 'axios';
 interface CVAnalysis {
   score: number;
   feedback: string;
+  highlights?: string; // Puntos positivos
+  alerts?: string; // Puntos negativos/alertas
   criteria: {
     jobStability: { passed: boolean; message: string };
     seniority: { passed: boolean; message: string };
@@ -299,9 +301,43 @@ export const CVUploader = () => {
           companyFit: { passed: false, message: 'Sin análisis' }
         };
 
+        // Función para separar el feedback en positivos y negativos
+        const separateFeedback = (feedback: string) => {
+          const lines = feedback.split('\n').filter(line => line.trim());
+          const highlights: string[] = [];
+          const alerts: string[] = [];
+          
+          lines.forEach(line => {
+            const lowerLine = line.toLowerCase();
+            if (lowerLine.includes('destacar') || lowerLine.includes('positivo') || 
+                lowerLine.includes('fortaleza') || lowerLine.includes('experiencia relevante') ||
+                lowerLine.includes('buena') || lowerLine.includes('excelente') ||
+                lowerLine.includes('sólida') || lowerLine.includes('apropiada')) {
+              highlights.push(line);
+            } else if (lowerLine.includes('alerta') || lowerLine.includes('preocupa') ||
+                      lowerLine.includes('falta') || lowerLine.includes('debilidad') ||
+                      lowerLine.includes('problema') || lowerLine.includes('riesgo') ||
+                      lowerLine.includes('negativo') || lowerLine.includes('insuficiente')) {
+              alerts.push(line);
+            } else {
+              // Si no es claramente positivo o negativo, va a highlights por defecto
+              highlights.push(line);
+            }
+          });
+          
+          return {
+            highlights: highlights.length > 0 ? highlights.join('\n') : 'Sin puntos destacados específicos.',
+            alerts: alerts.length > 0 ? alerts.join('\n') : 'Sin alertas específicas.'
+          };
+        };
+
+        const feedbackSeparated = separateFeedback(finalEvaluation.feedback || '');
+
         const analysisResult: CVAnalysis = {
           score: finalEvaluation.score || 0,
           feedback: finalEvaluation.feedback || '',
+          highlights: feedbackSeparated.highlights,
+          alerts: feedbackSeparated.alerts,
           criteria: (finalEvaluation.criteria as CVAnalysis['criteria']) || defaultCriteria
         };
         setAnalysis(analysisResult);
@@ -518,9 +554,28 @@ export const CVUploader = () => {
                   <h3 className="text-xl font-semibold">
                     {getScoreDefinition(analysis.score)}
                   </h3>
-                  <p className="text-muted-foreground max-w-2xl mx-auto">
-                    {analysis.feedback}
-                  </p>
+                  
+                  {/* Resumen dividido en dos columnas */}
+                  <div className="grid gap-4 md:grid-cols-2 max-w-4xl mx-auto mt-6">
+                    <div className="space-y-2">
+                      <h4 className="font-semibold text-success flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4" />
+                        Puntos a destacar
+                      </h4>
+                      <p className="text-sm text-muted-foreground bg-success/5 p-3 rounded-lg border border-success/20">
+                        {analysis.highlights || 'Sin puntos destacados específicos.'}
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="font-semibold text-destructive flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4" />
+                        Alertas
+                      </h4>
+                      <p className="text-sm text-muted-foreground bg-destructive/5 p-3 rounded-lg border border-destructive/20">
+                        {analysis.alerts || 'Sin alertas específicas.'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </CardContent>
