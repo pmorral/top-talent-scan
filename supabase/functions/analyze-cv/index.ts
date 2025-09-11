@@ -66,8 +66,8 @@ PASA si: Tiene carrera universitaria terminada (Licenciatura/Ingeniería/Bachelo
 RED FLAG si: No tiene carrera universitaria terminada, solo tiene carrera técnica, o no se especifica educación
 
 4. INGLÉS
-PASA si: Menciona nivel B2+ o intermedio-avanzado, o el CV está escrito en inglés, o trabajó en empresa internacional
-RED FLAG si: No menciona inglés, indica nivel básico/A1/A2, o no hay evidencia de manejo del idioma
+PASA si: Menciona nivel B2+ o intermedio-avanzado, O el CV está escrito completamente en inglés (más del 80% del contenido en inglés), O trabajó en empresa internacional con evidencia de uso del inglés
+RED FLAG si: No menciona inglés, indica nivel básico/A1/A2, o no hay evidencia de manejo del idioma y el CV está escrito en español
 
 5. CERTIFICACIONES
 PASA si: Tiene al menos 1 certificación o curso relevante para su área profesional
@@ -83,7 +83,7 @@ RED FLAG si: Solo ha trabajado en PYMES tradicionales locales, o no se puede det
 
 8. ORTOGRAFÍA Y GRAMÁTICA
 PASA si: El CV tiene máximo 1 error ortográfico/gramatical menor
-RED FLAG si: Tiene 2 o más errores ortográficos/gramaticales (incluyendo tildes faltantes, puntuación incorrecta, mayúsculas mal usadas, concordancia incorrecta)
+RED FLAG si: Tiene 2 o más errores ortográficos/gramaticales (incluyendo tildes faltantes, puntuación incorrecta, mayúsculas mal usadas, concordancia incorrecta). En tu explicación, menciona EXACTAMENTE dónde están los errores encontrados (máximo 5 ejemplos específicos con el texto incorrecto)
 
 9. FIT CON EL ROL
 PASA si: Su experiencia es relevante para el rol y no hay downgrade jerárquico significativo
