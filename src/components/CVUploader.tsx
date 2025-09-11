@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Upload, FileText, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { Upload, FileText, CheckCircle, XCircle, AlertTriangle, Trash2, RotateCcw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthProvider';
@@ -339,6 +339,20 @@ export const CVUploader = () => {
     }
   };
 
+  const resetAnalysis = () => {
+    setFile(null);
+    setAnalysis(null);
+    setProgress(0);
+    setRoleInfo('');
+    setCompanyInfo('');
+    setIsAnalyzing(false);
+  };
+
+  const removeFile = () => {
+    setFile(null);
+    setProgress(0);
+  };
+
   const getScoreColor = (score: number) => {
     if (score >= 8) return 'text-success';
     if (score >= 6) return 'text-warning';
@@ -423,9 +437,14 @@ export const CVUploader = () => {
                     {(file.size / 1024 / 1024).toFixed(2)} MB
                   </p>
                 </div>
-                <Button onClick={analyzeCV} disabled={isAnalyzing || !roleInfo.trim() || !companyInfo.trim()} className="w-full">
-                  {isAnalyzing ? 'Analizando...' : 'Analizar CV'}
-                </Button>
+                <div className="flex gap-2">
+                  <Button onClick={analyzeCV} disabled={isAnalyzing || !roleInfo.trim() || !companyInfo.trim()} className="flex-1">
+                    {isAnalyzing ? 'Analizando...' : 'Analizar CV'}
+                  </Button>
+                  <Button variant="outline" onClick={removeFile} disabled={isAnalyzing} className="px-3">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className="space-y-4">
@@ -538,6 +557,24 @@ export const CVUploader = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* New Analysis Call to Action */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center space-y-4">
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold">¿Necesitas evaluar otro CV?</h3>
+                  <p className="text-muted-foreground">
+                    Comienza un nuevo análisis desde cero
+                  </p>
+                </div>
+                <Button onClick={resetAnalysis} variant="outline" className="flex items-center gap-2">
+                  <RotateCcw className="h-4 w-4" />
+                  Evaluar Nuevo CV
+                </Button>
               </div>
             </CardContent>
           </Card>
