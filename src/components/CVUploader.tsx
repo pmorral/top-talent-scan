@@ -84,38 +84,49 @@ export const CVUploader = () => {
 
 
   const extractTextFromPDF = async (fileName: string): Promise<string> => {
-    console.log('=== INICIANDO EXTRACCIÓN DE PDF CON FUNCIÓN LOCAL ===');
+    console.log('=== INICIANDO EXTRACCIÓN DE PDF CON API DE LAPIEZA ===');
     console.log('Archivo:', fileName);
     
     try {
-      if (!file) {
-        throw new Error('No hay archivo disponible para extracción');
+      // Get signed URL for the uploaded file with shorter expiry for security
+      const { data: signedUrlData, error: urlError } = await supabase.storage
+        .from('cv-files')
+        .createSignedUrl(fileName, 1800); // 30 minutes expiry
+
+      if (urlError) {
+        console.error('❌ Error creating signed URL:', urlError);
+        throw new Error(`Error generando URL segura: ${urlError.message}`);
       }
 
-      console.log('🔄 Usando extracción local de PDF...');
-      
-      // Create FormData with the original file
-      const formData = new FormData();
-      formData.append('file', file);
+      if (!signedUrlData?.signedUrl) {
+        throw new Error('No se pudo generar la URL segura para el archivo');
+      }
 
-      // Call our local Edge Function for direct text extraction
-      const { data, error } = await supabase.functions.invoke('extract-pdf-text', {
-        body: formData,
+      console.log('✅ Signed URL obtenida:', signedUrlData.signedUrl);
+
+      // Call API de LaPieza directamente para obtener texto COMPLETO
+      console.log('🔄 Llamando API de LaPieza para texto completo...');
+      const { data, error } = await supabase.functions.invoke('extract-pdf-proxy', {
+        body: {
+          cv_url: signedUrlData.signedUrl,
+          mode: "text",
+          need_personal_data: false, // Evitar procesamiento adicional
+        },
       });
 
       if (error) {
-        console.error('❌ Error en Edge Function local:', error);
-        throw new Error(`Error en extracción local: ${error.message}`);
+        console.error('❌ Error en Edge Function:', error);
+        throw new Error(`Error en el proxy de extracción: ${error.message}`);
       }
 
-      console.log('✅ Respuesta de extracción local:', data);
+      console.log('✅ Respuesta de Edge Function recibida:', data);
 
       if (!data.success) {
-        throw new Error(data.error || 'Error desconocido en la extracción local');
+        throw new Error(data.error || 'Error desconocido en la extracción');
       }
 
       if (!data.text) {
-        throw new Error('La extracción local no devolvió texto');
+        throw new Error('La API no devolvió texto extraído del PDF');
       }
 
       const extractedText = data.text.trim();
@@ -124,27 +135,21 @@ export const CVUploader = () => {
         throw new Error('No se pudo extraer texto suficiente del CV. El análisis no se puede realizar con este archivo. Por favor, sube un CV donde el texto sea seleccionable (no una imagen escaneada).');
       }
 
-      console.log('✅ Texto extraído exitosamente:', extractedText.length, 'caracteres');
-      console.log('📝 Muestra del contenido (primeros 500 chars):', extractedText.substring(0, 500) + '...');
-      console.log('📝 Muestra del contenido (últimos 300 chars):', extractedText.substring(Math.max(0, extractedText.length - 300)));
+      console.log('✅ TEXTO CRUDO EXTRAÍDO:', extractedText.length, 'caracteres');
+      console.log('📝 INICIO DEL TEXTO CRUDO:', extractedText.substring(0, 800));
+      console.log('📝 FINAL DEL TEXTO CRUDO:', extractedText.substring(Math.max(0, extractedText.length - 400)));
       
+      // ANÁLISIS DIRECTO SIN MODIFICACIONES - este texto va directamente a OpenAI
       return extractedText;
       
     } catch (error) {
-      console.error('❌ Error general en extracción local:', error);
+      console.error('❌ Error general en extracción:', error);
       
       if (error instanceof Error) {
-        // Re-throw our custom errors as-is
-        if (error.message.includes('muy poco texto') ||
-            error.message.includes('no una imagen escaneada') ||
-            error.message.includes('Error en extracción local')) {
-          throw error;
-        }
-        
-        throw new Error(`Error procesando el PDF localmente: ${error.message}`);
+        throw new Error(`Error procesando el PDF: ${error.message}`);
       }
       
-      throw new Error('Error desconocido al procesar el PDF localmente. Inténtalo de nuevo.');
+      throw new Error('Error desconocido al procesar el PDF. Inténtalo de nuevo.');
     }
   };
 
@@ -225,7 +230,7 @@ export const CVUploader = () => {
         throw new Error('No se pudo extraer texto suficiente del CV. El análisis no se puede realizar con este archivo. Por favor, sube un CV donde el texto sea seleccionable (no una imagen escaneada).');
       }
 
-      console.log('✅ Texto listo para análisis:', cvText.substring(0, 300) + '...');
+      console.log('✅ TEXTO CRUDO ENVIADO A ANÁLISIS (primeros 500 chars):', cvText.substring(0, 500));
 
       // Create evaluation record
       const { data: evaluation, error: createError } = await supabase
