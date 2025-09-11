@@ -71,8 +71,8 @@ RED FLAG si: El CV está escrito principalmente en español Y no menciona inglé
 IMPORTANTE: Si detectas que el CV está escrito en inglés, automáticamente debe PASAR este criterio independientemente de si menciona o no el nivel de inglés explícitamente.
 
 5. CERTIFICACIONES
-PASA si: Tiene al menos 1 certificación o curso relevante para su área profesional
-RED FLAG si: No tiene certificaciones relevantes, o no menciona ninguna certificación
+PASA si: Tiene al menos 1 certificación o curso relevante para su área profesional (incluye certificaciones técnicas, cursos especializados, diplomados, cursos online de plataformas reconocidas como Coursera, Udemy, LinkedIn Learning, etc.)
+RED FLAG si: No tiene certificaciones ni cursos relevantes, o no menciona ningún tipo de formación adicional
 
 6. EVOLUCIÓN PROFESIONAL
 PASA si: Muestra progreso profesional en los últimos 6 años (ascensos, aumento de responsabilidades, mejora de seniority), O ya es C-level/Director/VP desde hace más de 6 años
