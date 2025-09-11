@@ -47,7 +47,7 @@ serve(async (req) => {
 
 REGLAS GLOBALES:
 - Solo existen 2 resultados para cada criterio: "PASA" o "RED FLAG"
-- Debes responder con "PASA:" o "RED FLAG:" al inicio de cada mensaje explicativo
+- Para cada criterio, explica directamente el resultado sin usar prefijos como "PASA:" o "RED FLAG:"
 - Si no hay evidencia suficiente en el CV para un criterio, considera RED FLAG
 - Sé estricto en la evaluación
 
