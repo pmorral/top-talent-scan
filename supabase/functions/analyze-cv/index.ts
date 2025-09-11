@@ -115,8 +115,7 @@ ${cvText}
 
 Responde EXACTAMENTE en este formato JSON:
 {
-  "score": [número del 1-12],
-  "feedback": "[explicación general de la puntuación]",
+  "feedback": "[explicación general de la evaluación basada en los criterios que pasaron y fallaron]",
   "criteria": {
     "jobStability": {"passed": [true/false], "message": "[explicación específica]"},
     "seniority": {"passed": [true/false], "message": "[explicación específica]"},
@@ -172,6 +171,25 @@ Responde EXACTAMENTE en este formato JSON:
       console.error('Failed to parse OpenAI response as JSON:', parseError);
       throw new Error('Invalid JSON response from AI analysis');
     }
+
+    // Calculate score based on criteria that passed (1 point per criterion)
+    const criteriaKeys = [
+      'jobStability', 'seniority', 'education', 'language', 'certifications',
+      'careerGrowth', 'companyExperience', 'spelling', 'roleFit', 'companyFit',
+      'technicalSkills', 'riskIndicators'
+    ];
+    
+    let passedCount = 0;
+    criteriaKeys.forEach(key => {
+      if (analysis.criteria[key]?.passed === true) {
+        passedCount++;
+      }
+    });
+    
+    // Override the score from OpenAI with our calculated score
+    analysis.score = passedCount;
+    
+    console.log(`Calculated score: ${passedCount}/12 based on criteria that passed`);
 
     // Update the evaluation with results
     const { error: updateError } = await supabase
