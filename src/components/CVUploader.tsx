@@ -304,8 +304,8 @@ export const CVUploader = () => {
         const analysisResult: CVAnalysis = {
           score: finalEvaluation.score || 0,
           feedback: finalEvaluation.feedback || '',
-          highlights: finalEvaluation.highlights || ['Sin puntos destacados específicos.'],
-          alerts: finalEvaluation.alerts || ['Sin alertas específicas.'],
+          highlights: Array.isArray(finalEvaluation.highlights) ? finalEvaluation.highlights : ['Sin puntos destacados específicos.'],
+          alerts: Array.isArray(finalEvaluation.alerts) ? finalEvaluation.alerts : ['Sin alertas específicas.'],
           criteria: (finalEvaluation.criteria as CVAnalysis['criteria']) || defaultCriteria
         };
         setAnalysis(analysisResult);
@@ -530,18 +530,40 @@ export const CVUploader = () => {
                         <CheckCircle className="h-4 w-4" />
                         Puntos a destacar
                       </h4>
-                      <p className="text-sm text-muted-foreground bg-success/5 p-3 rounded-lg border border-success/20">
-                        {analysis.highlights || 'Sin puntos destacados específicos.'}
-                      </p>
+                      <div className="text-sm text-muted-foreground bg-success/5 p-3 rounded-lg border border-success/20">
+                        {analysis.highlights && analysis.highlights.length > 0 ? (
+                          <ul className="space-y-1">
+                            {analysis.highlights.map((highlight, index) => (
+                              <li key={index} className="flex items-start gap-2">
+                                <span className="text-success mt-1">•</span>
+                                <span>{highlight}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <span>Sin puntos destacados específicos.</span>
+                        )}
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <h4 className="font-semibold text-destructive flex items-center gap-2">
                         <AlertTriangle className="h-4 w-4" />
                         Alertas
                       </h4>
-                      <p className="text-sm text-muted-foreground bg-destructive/5 p-3 rounded-lg border border-destructive/20">
-                        {analysis.alerts || 'Sin alertas específicas.'}
-                      </p>
+                      <div className="text-sm text-muted-foreground bg-destructive/5 p-3 rounded-lg border border-destructive/20">
+                        {analysis.alerts && analysis.alerts.length > 0 ? (
+                          <ul className="space-y-1">
+                            {analysis.alerts.map((alert, index) => (
+                              <li key={index} className="flex items-start gap-2">
+                                <span className="text-destructive mt-1">•</span>
+                                <span>{alert}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <span>Sin alertas específicas.</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

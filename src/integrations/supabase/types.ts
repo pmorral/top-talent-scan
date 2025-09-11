@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       cv_evaluations: {
         Row: {
+          alerts: string[] | null
           analysis_status: string
           company_info: string | null
           created_at: string
@@ -24,6 +25,7 @@ export type Database = {
           file_name: string
           file_path: string
           file_size: number
+          highlights: string[] | null
           id: string
           job_description_text: string | null
           role_info: string | null
@@ -32,6 +34,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          alerts?: string[] | null
           analysis_status?: string
           company_info?: string | null
           created_at?: string
@@ -40,6 +43,7 @@ export type Database = {
           file_name: string
           file_path: string
           file_size: number
+          highlights?: string[] | null
           id?: string
           job_description_text?: string | null
           role_info?: string | null
@@ -48,6 +52,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          alerts?: string[] | null
           analysis_status?: string
           company_info?: string | null
           created_at?: string
@@ -56,6 +61,7 @@ export type Database = {
           file_name?: string
           file_path?: string
           file_size?: number
+          highlights?: string[] | null
           id?: string
           job_description_text?: string | null
           role_info?: string | null
