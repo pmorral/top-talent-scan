@@ -346,14 +346,14 @@ export const CVUploader = () => {
   };
 
   const getScoreBgColor = (score: number) => {
-    if (score >= 8) return 'bg-success/10';
-    if (score >= 6) return 'bg-warning/10';
+    if (score >= 11) return 'bg-success/10';
+    if (score >= 8) return 'bg-warning/10';
     return 'bg-destructive/10';
   };
 
   const getScoreDefinition = (score: number) => {
-    if (score >= 9) return "HIRE";
-    if (score >= 7) return "MAYBE";
+    if (score >= 11) return "HIRE";
+    if (score >= 8) return "MAYBE";
     return "NO HIRE";
   };
 

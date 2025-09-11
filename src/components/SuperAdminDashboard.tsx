@@ -183,14 +183,14 @@ export const SuperAdminDashboard = () => {
   const hasActiveFilters = dateFrom || dateTo || selectedUserId !== 'all';
 
   const getScoreColor = (score: number) => {
-    if (score >= 8) return 'text-success';
-    if (score >= 6) return 'text-warning';
+    if (score >= 11) return 'text-success';
+    if (score >= 8) return 'text-warning';
     return 'text-destructive';
   };
 
   const getScoreBgColor = (score: number) => {
-    if (score >= 8) return 'bg-success/10';
-    if (score >= 6) return 'bg-warning/10';
+    if (score >= 11) return 'bg-success/10';
+    if (score >= 8) return 'bg-warning/10';
     return 'bg-destructive/10';
   };
 
@@ -525,7 +525,7 @@ export const SuperAdminDashboard = () => {
                         <td className="p-4">
                           {evaluation.score !== null ? (
                             <div className={`font-bold ${getScoreColor(evaluation.score)}`}>
-                              {evaluation.score}/10
+                              {evaluation.score}/12
                             </div>
                           ) : (
                             <span className="text-muted-foreground">-</span>
