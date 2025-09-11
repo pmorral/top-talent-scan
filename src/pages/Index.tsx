@@ -1,14 +1,16 @@
 import { AuthGate } from '@/components/AuthGate';
 import { CVUploader } from '@/components/CVUploader';
 import { SuperAdminDashboard } from '@/components/SuperAdminDashboard';
+import { UserHistory } from '@/components/UserHistory';
 import { useAuth } from '@/components/AuthProvider';
 import { Button } from '@/components/ui/button';
-import { LogOut, User, BarChart3 } from 'lucide-react';
+import { LogOut, User, BarChart3, Upload, History } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 const Index = () => {
   const { user, signOut } = useAuth();
   const [showDashboard, setShowDashboard] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   useEffect(() => {
@@ -41,11 +43,25 @@ const Index = () => {
                 <User className="h-4 w-4" />
                 {user.email}
               </div>
+              {!isSuperAdmin && (
+                <Button 
+                  variant={showHistory ? "default" : "outline"}
+                  size="sm" 
+                  onClick={() => setShowHistory(!showHistory)}
+                  className="flex items-center gap-2"
+                >
+                  {showHistory ? <Upload className="h-4 w-4" /> : <History className="h-4 w-4" />}
+                  {showHistory ? 'Evaluador' : 'Historial'}
+                </Button>
+              )}
               {isSuperAdmin && (
                 <Button 
                   variant={showDashboard ? "default" : "outline"}
                   size="sm" 
-                  onClick={() => setShowDashboard(!showDashboard)}
+                  onClick={() => {
+                    setShowDashboard(!showDashboard);
+                    if (!showDashboard) setShowHistory(false);
+                  }}
                   className="flex items-center gap-2"
                 >
                   <BarChart3 className="h-4 w-4" />
@@ -70,6 +86,8 @@ const Index = () => {
       <main className="container mx-auto px-4 py-8">
         {isSuperAdmin && showDashboard ? (
           <SuperAdminDashboard />
+        ) : showHistory ? (
+          <UserHistory />
         ) : (
           <CVUploader />
         )}
