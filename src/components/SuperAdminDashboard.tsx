@@ -636,12 +636,10 @@ export const SuperAdminDashboard = () => {
                           {key === 'seniority' && 'Seniority del Rol'}
                           {key === 'education' && 'Formación Académica'}
                           {key === 'language' && 'Nivel de Inglés'}
-                          {key === 'certifications' && 'Certificaciones y Formación'}
+                          {key === 'certifications' && 'Certificaciones'}
                           {key === 'careerGrowth' && 'Evolución Profesional'}
                           {key === 'companyExperience' && 'Experiencia Empresarial'}
                           {key === 'spelling' && 'Ortografía'}
-                          {key === 'technicalSkills' && 'Habilidades Técnicas'}
-                          {key === 'riskIndicators' && 'Indicadores de Riesgo'}
                           {key === 'roleFit' && 'Fit con el Rol'}
                           {key === 'companyFit' && 'Fit con la Empresa'}
                         </h4>

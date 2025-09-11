@@ -24,8 +24,6 @@ interface CVAnalysis {
     careerGrowth: { passed: boolean; message: string };
     companyExperience: { passed: boolean; message: string };
     spelling: { passed: boolean; message: string };
-    technicalSkills: { passed: boolean; message: string };
-    riskIndicators: { passed: boolean; message: string };
     roleFit: { passed: boolean; message: string };
     companyFit: { passed: boolean; message: string };
   };
@@ -85,23 +83,40 @@ export const CVUploader = () => {
   };
 
 
-  const extractTextFromPDF = async (uploadedFile: File): Promise<string> => {
+  const extractTextFromPDF = async (fileName: string): Promise<string> => {
     console.log('=== INICIANDO EXTRACCIÓN DE PDF CON EDGE FUNCTION ===');
-    console.log('Archivo:', uploadedFile.name, 'tamaño:', uploadedFile.size);
+    console.log('Archivo:', fileName);
     
     try {
-      // Create FormData to send the file directly to extract-pdf-text
-      const formData = new FormData();
-      formData.append('file', uploadedFile);
+      // Get signed URL for the uploaded file with shorter expiry for security
+      const { data: signedUrlData, error: urlError } = await supabase.storage
+        .from('cv-files')
+        .createSignedUrl(fileName, 1800); // 30 minutes expiry
 
-      console.log('🔄 Llamando extract-pdf-text directamente...');
-      const { data, error } = await supabase.functions.invoke('extract-pdf-text', {
-        body: formData,
+      if (urlError) {
+        console.error('❌ Error creating signed URL:', urlError);
+        throw new Error(`Error generando URL segura: ${urlError.message}`);
+      }
+
+      if (!signedUrlData?.signedUrl) {
+        throw new Error('No se pudo generar la URL segura para el archivo');
+      }
+
+      console.log('✅ Signed URL obtenida:', signedUrlData.signedUrl);
+
+      // Call our Edge Function proxy instead of calling the API directly
+      console.log('🔄 Llamando Edge Function proxy...');
+      const { data, error } = await supabase.functions.invoke('extract-pdf-proxy', {
+        body: {
+          cv_url: signedUrlData.signedUrl,
+          mode: "text",
+          need_personal_data: true,
+        },
       });
 
       if (error) {
         console.error('❌ Error en Edge Function:', error);
-        throw new Error(`Error en la extracción: ${error.message}`);
+        throw new Error(`Error en el proxy de extracción: ${error.message}`);
       }
 
       console.log('✅ Respuesta de Edge Function recibida:', data);
@@ -111,7 +126,7 @@ export const CVUploader = () => {
       }
 
       if (!data.text) {
-        throw new Error('La función no devolvió texto extraído del PDF');
+        throw new Error('La API no devolvió texto extraído del PDF');
       }
 
       const extractedText = data.text.trim();
@@ -208,7 +223,7 @@ export const CVUploader = () => {
         description: "Procesando el contenido de tu CV",
       });
       
-      const cvText = await extractTextFromPDF(file);
+      const cvText = await extractTextFromPDF(fileName);
       setProgress(60);
       
       // Use role info as job description text
@@ -289,8 +304,6 @@ export const CVUploader = () => {
           careerGrowth: { passed: false, message: 'Sin análisis' },
           companyExperience: { passed: false, message: 'Sin análisis' },
           spelling: { passed: false, message: 'Sin análisis' },
-          technicalSkills: { passed: false, message: 'Sin análisis' },
-          riskIndicators: { passed: false, message: 'Sin análisis' },
           roleFit: { passed: false, message: 'Sin análisis' },
           companyFit: { passed: false, message: 'Sin análisis' }
         };
@@ -519,8 +532,6 @@ export const CVUploader = () => {
                           {key === 'careerGrowth' && 'Evolución Profesional'}
                           {key === 'companyExperience' && 'Experiencia Empresarial'}
                           {key === 'spelling' && 'Ortografía'}
-                          {key === 'technicalSkills' && 'Habilidades Técnicas'}
-                          {key === 'riskIndicators' && 'Indicadores de Riesgo'}
                           {key === 'roleFit' && 'Fit con el Rol'}
                           {key === 'companyFit' && 'Fit con la Empresa'}
                         </h4>
