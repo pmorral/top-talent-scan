@@ -313,7 +313,7 @@ export const SuperAdminDashboard = () => {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Promedio Puntuación</p>
-                <p className="text-2xl font-bold">{stats.averageScore}/10</p>
+                <p className="text-2xl font-bold">{stats.averageScore}/12</p>
               </div>
             </div>
           </CardContent>
@@ -615,7 +615,7 @@ export const SuperAdminDashboard = () => {
             {/* Score Display */}
             <div className={`text-center p-6 rounded-lg ${getScoreBgColor(selectedEvaluation.score || 0)}`}>
               <div className={`text-4xl font-bold ${getScoreColor(selectedEvaluation.score || 0)}`}>
-                {selectedEvaluation.score}/10
+                {selectedEvaluation.score}/12
               </div>
               <p className="mt-2 text-muted-foreground">{selectedEvaluation.feedback}</p>
             </div>
@@ -642,6 +642,8 @@ export const SuperAdminDashboard = () => {
                           {key === 'spelling' && 'Ortografía'}
                           {key === 'roleFit' && 'Fit con el Rol'}
                           {key === 'companyFit' && 'Fit con la Empresa'}
+                          {key === 'technicalSkills' && 'Habilidades Técnicas Afines'}
+                          {key === 'riskIndicators' && 'Indicadores de Riesgo'}
                         </h4>
                         <Badge variant={criterion.passed ? "default" : "destructive"}>
                           {criterion.passed ? 'Aprobado' : 'Red Flag'}
