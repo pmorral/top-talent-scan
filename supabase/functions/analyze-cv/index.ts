@@ -34,6 +34,9 @@ serve(async (req) => {
     // DETAILED LOGGING - Log CV text content and analysis
     console.log('=== DETAILED CV ANALYSIS LOGGING ===');
     console.log('CV Text Length:', cvText.length);
+    console.log('=== TEXTO COMPLETO DEL CV ENVIADO A OPENAI ===');
+    console.log(cvText);
+    console.log('=== FIN DEL TEXTO COMPLETO ===');
     console.log('CV Text (first 500 chars):', cvText.substring(0, 500));
     console.log('CV Text (last 500 chars):', cvText.substring(Math.max(0, cvText.length - 500)));
     
