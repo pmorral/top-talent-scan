@@ -538,7 +538,6 @@ export const CVUploader = () => {
                           {key === 'spelling' && 'Ortografía'}
                           {key === 'technicalSkills' && 'Habilidades Técnicas'}
                           {key === 'riskIndicators' && 'Indicadores de Riesgo'}
-                          {key === 'riskIndicators' && 'Indicadores de Riesgo'}
                           {key === 'roleFit' && 'Fit con el Rol'}
                           {key === 'companyFit' && 'Fit con la Empresa'}
                         </h4>
