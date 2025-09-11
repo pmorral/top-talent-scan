@@ -84,7 +84,7 @@ RED FLAG si: Solo ha trabajado en PYMES tradicionales locales, o no se puede det
 
 8. ORTOGRAFÍA Y GRAMÁTICA
 PASA si: El CV tiene máximo 1 error ortográfico/gramatical menor
-RED FLAG si: Tiene 2 o más errores ortográficos/gramaticales (incluyendo tildes faltantes, puntuación incorrecta, mayúsculas mal usadas, concordancia incorrecta). En tu explicación, menciona EXACTAMENTE dónde están los errores encontrados (máximo 5 ejemplos específicos con el texto incorrecto)
+RED FLAG si: Tiene 2 o más errores ortográficos/gramaticales SUSTANCIALES (tildes faltantes, palabras mal escritas, mayúsculas mal usadas, concordancia incorrecta, etc.). NO consideres como errores: problemas de formato, comas mal ubicadas, saltos de línea, espaciado, o puntuación menor. En tu explicación, menciona EXACTAMENTE dónde están los errores encontrados (máximo 5 ejemplos específicos con el texto incorrecto)
 
 9. FIT CON EL ROL
 PASA si: Su experiencia es relevante para el rol y no hay downgrade jerárquico significativo
