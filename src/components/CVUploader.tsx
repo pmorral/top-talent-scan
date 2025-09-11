@@ -309,19 +309,41 @@ export const CVUploader = () => {
           
           lines.forEach(line => {
             const lowerLine = line.toLowerCase();
-            if (lowerLine.includes('destacar') || lowerLine.includes('positivo') || 
-                lowerLine.includes('fortaleza') || lowerLine.includes('experiencia relevante') ||
-                lowerLine.includes('buena') || lowerLine.includes('excelente') ||
-                lowerLine.includes('sólida') || lowerLine.includes('apropiada')) {
-              highlights.push(line);
-            } else if (lowerLine.includes('alerta') || lowerLine.includes('preocupa') ||
-                      lowerLine.includes('falta') || lowerLine.includes('debilidad') ||
-                      lowerLine.includes('problema') || lowerLine.includes('riesgo') ||
-                      lowerLine.includes('negativo') || lowerLine.includes('insuficiente')) {
+            
+            // Palabras clave para alertas/aspectos negativos
+            const alertKeywords = [
+              'alerta', 'preocupa', 'falta', 'debilidad', 'problema', 'riesgo', 
+              'negativo', 'insuficiente', 'limitado', 'carece', 'ausencia',
+              'no tiene', 'sin experiencia', 'poca experiencia', 'inexperiencia',
+              'gap', 'brecha', 'inconsistencia', 'cambios frecuentes', 'inestabilidad',
+              'rotación', 'corto periodo', 'poco tiempo', 'saltos', 'dudoso',
+              'cuestionable', 'desfavorable', 'inadecuado', 'inapropiado'
+            ];
+            
+            // Palabras clave para puntos positivos
+            const highlightKeywords = [
+              'destacar', 'positivo', 'fortaleza', 'experiencia relevante', 'sólida',
+              'buena', 'excelente', 'apropiada', 'adecuada', 'amplia experiencia',
+              'trayectoria', 'consistente', 'estabilidad', 'progresión', 'crecimiento',
+              'especializado', 'expertise', 'competente', 'calificado', 'fuerte',
+              'impresionante', 'destacado', 'sobresaliente', 'valioso'
+            ];
+            
+            const hasAlertKeyword = alertKeywords.some(keyword => lowerLine.includes(keyword));
+            const hasHighlightKeyword = highlightKeywords.some(keyword => lowerLine.includes(keyword));
+            
+            if (hasAlertKeyword && !hasHighlightKeyword) {
               alerts.push(line);
-            } else {
-              // Si no es claramente positivo o negativo, va a highlights por defecto
+            } else if (hasHighlightKeyword && !hasAlertKeyword) {
               highlights.push(line);
+            } else {
+              // Para líneas ambiguas, usar contexto adicional
+              if (lowerLine.includes('no') || lowerLine.includes('sin') || 
+                  lowerLine.includes('poco') || lowerLine.includes('menos')) {
+                alerts.push(line);
+              } else {
+                highlights.push(line);
+              }
             }
           });
           
