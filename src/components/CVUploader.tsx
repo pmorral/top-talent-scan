@@ -6,8 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Upload, FileText, CheckCircle, XCircle, AlertTriangle, Trash2, RotateCcw } from 'lucide-react';
+import { Upload, FileText, CheckCircle, XCircle, AlertTriangle, Trash2, RotateCcw, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import jsPDF from 'jspdf';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthProvider';
 import axios from 'axios';
@@ -388,6 +389,177 @@ export const CVUploader = () => {
     return <XCircle className="h-4 w-4 text-destructive" />;
   };
 
+  const exportToPDF = async () => {
+    if (!analysis || !file) return;
+
+    try {
+      const pdf = new jsPDF();
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const margin = 20;
+      let currentY = margin;
+
+      // Header
+      pdf.setFontSize(20);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Reporte de Evaluación de CV', margin, currentY);
+      currentY += 15;
+
+      // CV Info
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Archivo: ${file.name}`, margin, currentY);
+      currentY += 8;
+      pdf.text(`Fecha de análisis: ${new Date().toLocaleDateString('es-ES')}`, margin, currentY);
+      currentY += 15;
+
+      // Job Details
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Detalles de la Vacante', margin, currentY);
+      currentY += 10;
+      
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      const roleLines = pdf.splitTextToSize(`Rol: ${roleInfo}`, pageWidth - 2 * margin);
+      pdf.text(roleLines, margin, currentY);
+      currentY += roleLines.length * 5 + 5;
+      
+      const companyLines = pdf.splitTextToSize(`Empresa: ${companyInfo}`, pageWidth - 2 * margin);
+      pdf.text(companyLines, margin, currentY);
+      currentY += companyLines.length * 5 + 15;
+
+      // Score Section
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      const scoreColor = analysis.score >= 8 ? [34, 197, 94] : analysis.score >= 6 ? [251, 191, 36] : [239, 68, 68];
+      pdf.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2]);
+      pdf.text(`Puntuación: ${analysis.score}/12 - ${getScoreDefinition(analysis.score)}`, margin, currentY);
+      pdf.setTextColor(0, 0, 0);
+      currentY += 20;
+
+      // Highlights Section
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(34, 197, 94);
+      pdf.text('✓ Puntos a Destacar', margin, currentY);
+      pdf.setTextColor(0, 0, 0);
+      currentY += 10;
+
+      if (analysis.highlights && analysis.highlights.length > 0) {
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        analysis.highlights.forEach((highlight, index) => {
+          const lines = pdf.splitTextToSize(`• ${highlight}`, pageWidth - 2 * margin - 10);
+          pdf.text(lines, margin + 5, currentY);
+          currentY += lines.length * 5 + 3;
+        });
+      }
+      currentY += 10;
+
+      // Alerts Section
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(239, 68, 68);
+      pdf.text('⚠ Alertas', margin, currentY);
+      pdf.setTextColor(0, 0, 0);
+      currentY += 10;
+
+      if (analysis.alerts && analysis.alerts.length > 0) {
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        analysis.alerts.forEach((alert, index) => {
+          const lines = pdf.splitTextToSize(`• ${alert}`, pageWidth - 2 * margin - 10);
+          pdf.text(lines, margin + 5, currentY);
+          currentY += lines.length * 5 + 3;
+        });
+      }
+      currentY += 15;
+
+      // Check if we need a new page
+      if (currentY > 250) {
+        pdf.addPage();
+        currentY = margin;
+      }
+
+      // Detailed Criteria Section
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Evaluación Detallada por Criterios', margin, currentY);
+      currentY += 15;
+
+      const criteriaLabels = {
+        jobStability: 'Estabilidad Laboral',
+        seniority: 'Seniority del Rol',
+        education: 'Formación Académica',
+        language: 'Nivel de Inglés',
+        certifications: 'Certificaciones',
+        careerGrowth: 'Evolución Profesional',
+        companyExperience: 'Experiencia Empresarial',
+        spelling: 'Ortografía',
+        roleFit: 'Fit con el Rol',
+        companyFit: 'Fit con la Empresa',
+        technicalSkills: 'Habilidades Técnicas Afines',
+        riskIndicators: 'Indicadores de Riesgo'
+      };
+
+      Object.entries(analysis.criteria).forEach(([key, criterion]) => {
+        if (currentY > 270) {
+          pdf.addPage();
+          currentY = margin;
+        }
+
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'bold');
+        const status = criterion.passed ? '✓' : '✗';
+        const statusColor = criterion.passed ? [34, 197, 94] : [239, 68, 68];
+        
+        pdf.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
+        pdf.text(`${status} ${criteriaLabels[key as keyof typeof criteriaLabels]}`, margin, currentY);
+        pdf.setTextColor(0, 0, 0);
+        currentY += 8;
+
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        const messageLines = pdf.splitTextToSize(criterion.message, pageWidth - 2 * margin - 10);
+        pdf.text(messageLines, margin + 5, currentY);
+        currentY += messageLines.length * 5 + 8;
+      });
+
+      // Summary Section
+      if (currentY > 250) {
+        pdf.addPage();
+        currentY = margin;
+      }
+
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Resumen General', margin, currentY);
+      currentY += 10;
+
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      const feedbackLines = pdf.splitTextToSize(analysis.feedback, pageWidth - 2 * margin);
+      pdf.text(feedbackLines, margin, currentY);
+
+      // Save PDF
+      const fileName = `CV_Analysis_${file.name.replace('.pdf', '')}_${new Date().toISOString().split('T')[0]}.pdf`;
+      pdf.save(fileName);
+
+      toast({
+        title: "PDF exportado exitosamente",
+        description: `El reporte se ha descargado como ${fileName}`,
+      });
+
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      toast({
+        title: "Error al exportar PDF",
+        description: "No se pudo generar el archivo PDF. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Upload Section */}
@@ -566,6 +738,14 @@ export const CVUploader = () => {
                       </div>
                     </div>
                   </div>
+                </div>
+
+                {/* Export PDF Button */}
+                <div className="flex justify-center mt-6">
+                  <Button onClick={exportToPDF} className="flex items-center gap-2">
+                    <Download className="h-4 w-4" />
+                    Descargar Reporte PDF
+                  </Button>
                 </div>
               </div>
             </CardContent>
