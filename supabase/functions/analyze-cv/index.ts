@@ -43,7 +43,12 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    const prompt = `Analiza este CV y evalúalo según estos 12 criterios específicos para LaPieza.
+    const prompt = `Analiza DETALLADAMENTE TODO EL TEXTO BRUTO del CV y evalúalo según estos 12 criterios específicos para LaPieza.
+
+INSTRUCCIONES CRÍTICAS DE ANÁLISIS:
+- DEBES analizar todo el texto completo del CV sin resumir ni omitir información
+- Lee cuidadosamente TODAS las fechas, períodos laborales, y detalles antes de evaluar
+- No hagas suposiciones - basa tu evaluación únicamente en lo que aparece en el CV
 
 REGLAS GLOBALES:
 - Solo existen 2 resultados para cada criterio: "PASA" o "RED FLAG"
@@ -54,8 +59,9 @@ REGLAS GLOBALES:
 CRITERIOS:
 
 1. ESTABILIDAD LABORAL
-PASA si: Ha estado 1 año o más en la mayoría de sus últimos 5 trabajos
-RED FLAG si: Ha estado menos de 1 año en 2 o más de sus últimos 5 trabajos, o no hay suficiente información de fechas
+FORMATOS DE FECHA VÁLIDOS: "2020-2022", "Enero 2020 - Marzo 2022", "2020", "2019-presente", "Mar 2020 - Dic 2021"
+PASA si: Ha estado 1 año o más en la mayoría de sus últimos 5 trabajos (calcula duración basado en fechas disponibles)
+RED FLAG si: Ha estado menos de 1 año en 2 o más de sus últimos 5 trabajos, o genuinamente NO hay fechas de ningún tipo
 
 2. SENIORITY
 PASA si: Tiene 3 años o más de experiencia profesional total
@@ -89,9 +95,12 @@ RED FLAG si: Tiene 2 o más errores ortográficos/gramaticales (incluyendo tilde
 PASA si: Demuestra experiencia sólida en las tecnologías/herramientas core mencionadas en el Job Description, con años de experiencia específicos cuando es posible determinar
 RED FLAG si: Le faltan habilidades técnicas fundamentales para el rol, no especifica años de experiencia en tecnologías clave, o solo menciona conocimientos superficiales
 
-10. INDICADORES DE RIESGO (NUEVO)
-PASA si: No presenta gaps laborales sin explicación (>6 meses), cambios de trabajo coherentes (>1 año por posición), fechas y responsabilidades consistentes
-RED FLAG si: Tiene gaps laborales sin explicación >6 meses, cambios muy frecuentes (<1 año), inconsistencias en fechas/títulos/responsabilidades, o progresión de carrera incoherente
+10. INDICADORES DE RIESGO (MEJORADO)
+FORMATOS DE FECHA VÁLIDOS PARA ESTE CRITERIO: Cualquier formato que indique períodos (años, rangos, fechas específicas)
+EJEMPLOS DE FECHAS VÁLIDAS: "2020-2022", "2019", "Ene 2020 - Mar 2022", "2018-presente"
+PASA si: No presenta gaps laborales genuinos sin explicación (>6 meses entre empleos), cambios de trabajo coherentes, fechas consistentes
+RED FLAG si: Tiene gaps laborales reales sin explicación >6 meses, cambios extremadamente frecuentes (<6 meses), inconsistencias claras en fechas/títulos, o progresión de carrera completamente incoherente
+IMPORTANTE: Si hay fechas en cualquier formato (incluso solo años), NO consideres esto como "falta de información de fechas"
 
 11. FIT CON EL ROL (MEJORADO)
 PASA si: Su experiencia técnica específica, industria, y responsabilidades previas son altamente relevantes para el rol sin downgrade jerárquico significativo. Considera DETALLADAMENTE las tecnologías, metodologías y experiencia mencionadas en el JD
