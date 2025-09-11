@@ -43,7 +43,7 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    const prompt = `Analiza este CV y evalúalo según estos 10 criterios específicos para LaPieza.
+    const prompt = `Analiza este CV y evalúalo según estos 12 criterios específicos para LaPieza.
 
 REGLAS GLOBALES:
 - Solo existen 2 resultados para cada criterio: "PASA" o "RED FLAG"
@@ -93,6 +93,14 @@ RED FLAG si: No tiene experiencia relevante, está sobrecalificado con downgrade
 PASA si: Su experiencia encaja con la industria/empresa, o la transición tiene sentido lógico
 RED FLAG si: Su experiencia no encaja con la industria, no hay conexión lógica, o falta información sobre su background empresarial
 
+11. HABILIDADES TÉCNICAS AFINES
+PASA si: Tiene 2 o más hard skills técnicas específicas en el CV que NO aparecen mencionadas en la descripción del trabajo (mostrando valor agregado)
+RED FLAG si: No tiene hard skills adicionales relevantes, solo menciona lo básico que ya aparece en el job description, o le faltan habilidades técnicas clave para el rol
+
+12. INDICADORES DE RIESGO
+PASA si: No presenta gaps laborales significativos (más de 6 meses), fechas consistentes, títulos coherentes, y responsabilidades alineadas con su seniority
+RED FLAG si: Presenta gaps laborales sin explicación, inconsistencias en fechas, títulos que no coinciden con responsabilidades, o discrepancias en la progresión profesional
+
 INFORMACIÓN DEL ROL: ${roleInfo}
 
 INFORMACIÓN DE LA EMPRESA: ${companyInfo}
@@ -107,7 +115,7 @@ ${cvText}
 
 Responde EXACTAMENTE en este formato JSON:
 {
-  "score": [número del 1-10],
+  "score": [número del 1-12],
   "feedback": "[explicación general de la puntuación]",
   "criteria": {
     "jobStability": {"passed": [true/false], "message": "[explicación específica]"},
@@ -119,7 +127,9 @@ Responde EXACTAMENTE en este formato JSON:
     "companyExperience": {"passed": [true/false], "message": "[explicación específica]"},
     "spelling": {"passed": [true/false], "message": "[explicación específica]"},
     "roleFit": {"passed": [true/false], "message": "[explicación específica${jobDescriptionText ? ' basada en la descripción completa del trabajo proporcionada' : ' considerando el rol: ' + roleInfo}]"},
-    "companyFit": {"passed": [true/false], "message": "[explicación específica considerando la empresa: ${companyInfo}]"}
+    "companyFit": {"passed": [true/false], "message": "[explicación específica considerando la empresa: ${companyInfo}]"},
+    "technicalSkills": {"passed": [true/false], "message": "[explicación específica sobre habilidades técnicas adicionales y relevancia para el rol]"},
+    "riskIndicators": {"passed": [true/false], "message": "[explicación específica sobre gaps laborales, consistencia de fechas, títulos y responsabilidades]"}
   }
 }`;
 

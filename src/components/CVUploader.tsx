@@ -308,7 +308,7 @@ export const CVUploader = () => {
         
         toast({
           title: "Análisis completado",
-          description: `CV analizado exitosamente. Puntuación: ${finalEvaluation.score}/10`,
+          description: `CV analizado exitosamente. Puntuación: ${finalEvaluation.score}/12`,
         });
       } else {
         throw new Error('Analysis failed to complete');
@@ -485,7 +485,7 @@ export const CVUploader = () => {
                   <div className={`text-6xl font-bold ${getScoreColor(analysis.score)}`}>
                     {analysis.score}
                   </div>
-                  <div className="text-lg text-muted-foreground">/ 10</div>
+                  <div className="text-lg text-muted-foreground">/ 12</div>
                 </div>
                 <div className="space-y-2">
                   <h3 className="text-xl font-semibold">
@@ -525,6 +525,8 @@ export const CVUploader = () => {
                           {key === 'spelling' && 'Ortografía'}
                           {key === 'roleFit' && 'Fit con el Rol'}
                           {key === 'companyFit' && 'Fit con la Empresa'}
+                          {key === 'technicalSkills' && 'Habilidades Técnicas Afines'}
+                          {key === 'riskIndicators' && 'Indicadores de Riesgo'}
                         </h4>
                         <Badge variant={criterion.passed ? "default" : "destructive"}>
                           {criterion.passed ? 'Aprobado' : 'Red Flag'}
